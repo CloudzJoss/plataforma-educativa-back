@@ -23,8 +23,14 @@ public class UsuarioInputDTO {
     @NotNull(message = "El rol es obligatorio")
     private Rol rol;
 
-    // Campos opcionales para perfiles
-    private String carrera;
-    private String codigoEstudiante;
-    private String departamento;
+    // AÑADIDO: DNI (Común para Alumno y Profesor)
+    @NotBlank(message = "El DNI es obligatorio")
+    private String dni;
+
+    // CAMPO DE ALUMNO: 'grado' en lugar de 'carrera'
+    private String grado;
+
+    // ELIMINADO: private String carrera;
+    // ELIMINADO: private String codigoEstudiante; (Se genera en el servicio)
+    // ELIMINADO: private String departamento;
 }

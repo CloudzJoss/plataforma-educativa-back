@@ -1,25 +1,28 @@
-package com.proyecto.fundaciondeportiva.dto.input;
+package com.proyecto.fundaciondeportiva.dto.output;
 
 import com.proyecto.fundaciondeportiva.model.Rol;
 import jakarta.validation.constraints.Email;
-// Quitamos NotBlank y NotNull de la mayoría de los campos
 import lombok.Data;
 
 @Data
 public class UsuarioUpdateDTO {
 
-    // Opcionales: solo se actualizan si se envían
     private String nombre;
 
-    @Email(message = "Si se envía un email, debe tener formato válido") // Mantenemos Email si se provee
+    @Email(message = "Si se envía un email, debe tener formato válido")
     private String email;
 
-    private String password; // Opcional: para cambiar contraseña
+    private String password;
 
-    // private Rol rol; // Generalmente no se permite cambiar el rol en una edición simple. Si lo necesitas, descomenta.
+    // AÑADIDO: DNI (opcional)
+    private String dni;
 
-    // Campos de perfil también opcionales
-    private String carrera;
+    // CAMPO DE ALUMNO: 'grado' en lugar de 'carrera' (opcional)
+    private String grado;
+
+    // MANTENIDO: Código de estudiante (opcional)
     private String codigoEstudiante;
-    private String departamento;
+
+    // ELIMINADO: private String carrera;
+    // ELIMINADO: private String departamento;
 }

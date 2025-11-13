@@ -13,6 +13,15 @@ public class PerfilAlumno {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String carrera;
+
+    // CAMBIO: Grado en lugar de Carrera
+    private String grado;
+
+    // AÑADIDO: DNI (debe ser único)
+    @Column(nullable = false, unique = true)
+    private String dni;
+
+    // MANTENIDO: Código de Estudiante
+    @Column(nullable = false, unique = true)
     private String codigoEstudiante;
 }

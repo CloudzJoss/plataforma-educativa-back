@@ -1,7 +1,7 @@
 package com.proyecto.fundaciondeportiva.controller;
 
 import com.proyecto.fundaciondeportiva.dto.input.UsuarioInputDTO;
-import com.proyecto.fundaciondeportiva.dto.input.UsuarioUpdateDTO; // Importa el DTO de actualización
+import com.proyecto.fundaciondeportiva.dto.output.UsuarioUpdateDTO;
 import com.proyecto.fundaciondeportiva.dto.output.UsuarioOutputDTO;
 import com.proyecto.fundaciondeportiva.model.Usuario;
 import com.proyecto.fundaciondeportiva.service.UsuarioService;
@@ -10,28 +10,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-// import org.springframework.security.access.prepost.PreAuthorize; // Comentado por ahora
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/usuarios") // Ruta base para todos los endpoints de usuario
+@RequestMapping("/api/usuarios")
 public class UsuarioController {
 
     @Autowired
-    private UsuarioService usuarioService; // Inyección del servicio
+    private UsuarioService usuarioService;
 
     /**
      * Endpoint para crear un nuevo usuario (Alumno, Profesor o Admin).
-     * Público por configuración en SecurityConfig.
-     * Consume y produce JSON.
-     *
-     * @param inputDTO Datos del nuevo usuario.
-     * @return ResponseEntity con el DTO del usuario creado y estado 201 Created.
+     * Protegido: Solo accesible para ADMINISTRADOR (aunque la ruta es pública,
+     * la lógica interna del servicio asegura que sea un endpoint de gestión).
      */
     @PostMapping(value = "/crear", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    // Se mantiene la seguridad. Si deseas que alumnos se registren solos, debes quitar esta línea.
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioOutputDTO> crearUsuario(@Valid @RequestBody UsuarioInputDTO inputDTO) {
         Usuario nuevoUsuario = usuarioService.crearUsuario(inputDTO);
         UsuarioOutputDTO outputDTO = convertirAUsuarioOutputDTO(nuevoUsuario);
@@ -39,80 +40,64 @@ public class UsuarioController {
     }
 
     /**
-     * Endpoint para obtener la lista de todos los usuarios.
-     * Temporalmente público por configuración en SecurityConfig.
-     * Produce JSON.
-     *
-     * @return ResponseEntity con la lista de DTOs de usuarios y estado 200 OK.
+     * Endpoint para obtener el propio perfil.
+     * Protegido: Accesible por cualquier usuario autenticado (ALUMNO, PROFESOR, ADMINISTRADOR).
      */
+    @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UsuarioOutputDTO> obtenerPerfilPropio() {
+        // Obtenemos el email del usuario autenticado desde el contexto de seguridad
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String emailAutenticado = userDetails.getUsername();
+
+        // CORRECCIÓN: Usar un método que devuelva la entidad Usuario
+        Usuario usuario = usuarioService.obtenerUsuarioPorEmail(emailAutenticado) // ¡NUEVO MÉTODO REQUERIDO EN UsuarioService!
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado en la base de datos."));
+
+        UsuarioOutputDTO outputDTO = convertirAUsuarioOutputDTO(usuario);
+        return ResponseEntity.ok(outputDTO);
+    }
+
+    // --- Endpoints de Gestión (Solo ADMINISTRADOR) ---
+
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    // @PreAuthorize("hasRole('ADMINISTRADOR')") // Seguridad comentada temporalmente
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<UsuarioOutputDTO>> listarTodosLosUsuarios() {
         List<Usuario> usuarios = usuarioService.listarTodosLosUsuarios();
         List<UsuarioOutputDTO> outputDTOs = usuarios.stream()
-                .map(this::convertirAUsuarioOutputDTO) // Usa el método de mapeo
+                .map(this::convertirAUsuarioOutputDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(outputDTOs);
     }
 
-    /**
-     * Endpoint para obtener un usuario específico por su ID.
-     * Temporalmente público por configuración en SecurityConfig.
-     * Produce JSON.
-     *
-     * @param id El ID del usuario a buscar.
-     * @return ResponseEntity con el DTO del usuario encontrado y estado 200 OK.
-     */
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    // @PreAuthorize("hasRole('ADMINISTRADOR')") // Seguridad comentada temporalmente
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioOutputDTO> obtenerUsuarioPorId(@PathVariable Long id) {
         Usuario usuario = usuarioService.obtenerUsuarioPorId(id);
         UsuarioOutputDTO outputDTO = convertirAUsuarioOutputDTO(usuario);
         return ResponseEntity.ok(outputDTO);
     }
 
-    /**
-     * Endpoint para editar un usuario existente por su ID.
-     * Temporalmente público por configuración en SecurityConfig.
-     * Consume y produce JSON. Usa UsuarioUpdateDTO para permitir campos opcionales.
-     *
-     * @param id El ID del usuario a editar.
-     * @param updateDTO Datos a actualizar (campos opcionales).
-     * @return ResponseEntity con el DTO del usuario actualizado y estado 200 OK.
-     */
     @PutMapping(value = "/editar/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    // @PreAuthorize("hasRole('ADMINISTRADOR')") // Seguridad comentada temporalmente
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioOutputDTO> editarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioUpdateDTO updateDTO) {
-        Usuario usuarioActualizado = usuarioService.editarUsuario(id, updateDTO); // Llama al servicio con el DTO correcto
+        Usuario usuarioActualizado = usuarioService.editarUsuario(id, updateDTO);
         UsuarioOutputDTO outputDTO = convertirAUsuarioOutputDTO(usuarioActualizado);
         return ResponseEntity.ok(outputDTO);
     }
 
-    /**
-     * Endpoint para eliminar un usuario por su ID.
-     * Temporalmente público por configuración en SecurityConfig.
-     *
-     * @param id El ID del usuario a eliminar.
-     * @return ResponseEntity con estado 204 No Content si la eliminación fue exitosa.
-     */
     @DeleteMapping("/eliminar/{id}")
-    // @PreAuthorize("hasRole('ADMINISTRADOR')") // Seguridad comentada temporalmente
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long id) {
         usuarioService.eliminarUsuario(id);
-        return ResponseEntity.noContent().build(); // Respuesta HTTP 204 indica éxito sin contenido
+        return ResponseEntity.noContent().build();
     }
 
 
     /**
-     * Método privado de utilidad para convertir una entidad Usuario a UsuarioOutputDTO.
-     * Se encarga de mapear los campos comunes y aplanar los datos de los perfiles.
-     * Excluye datos sensibles como la contraseña.
-     *
-     * @param usuario La entidad Usuario a convertir.
-     * @return El objeto UsuarioOutputDTO mapeado.
+     * Método privado de utilidad para convertir Usuario a UsuarioOutputDTO.
      */
     private UsuarioOutputDTO convertirAUsuarioOutputDTO(Usuario usuario) {
-        // Validación para evitar NullPointerException si el usuario es null
         if (usuario == null) {
             return null;
         }
@@ -123,16 +108,15 @@ public class UsuarioController {
         dto.setEmail(usuario.getEmail());
         dto.setRol(usuario.getRol());
 
-        // Mapea datos del perfil de alumno si existe
         if (usuario.getPerfilAlumno() != null) {
-            dto.setCarrera(usuario.getPerfilAlumno().getCarrera());
+            dto.setDni(usuario.getPerfilAlumno().getDni()); // AÑADIDO DNI
+            dto.setGrado(usuario.getPerfilAlumno().getGrado()); // CAMBIO DE CARRERA A GRADO
             dto.setCodigoEstudiante(usuario.getPerfilAlumno().getCodigoEstudiante());
         }
-        // Mapea datos del perfil de profesor si existe
         if (usuario.getPerfilProfesor() != null) {
-            dto.setDepartamento(usuario.getPerfilProfesor().getDepartamento());
+            dto.setDni(usuario.getPerfilProfesor().getDni()); // AÑADIDO DNI
+            // ELIMINADO: dto.setDepartamento(...)
         }
         return dto;
     }
 }
-

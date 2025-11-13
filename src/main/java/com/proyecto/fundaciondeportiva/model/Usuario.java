@@ -1,6 +1,5 @@
 package com.proyecto.fundaciondeportiva.model;
 
-
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;

@@ -11,8 +11,13 @@ public class UsuarioOutputDTO {
     private String email;
     private Rol rol;
 
-    // Campos aplanados de los perfiles
-    private String carrera;
+    // AÑADIDO: DNI
+    private String dni;
+
+    // CAMPO DE ALUMNO: 'grado' en lugar de 'carrera'
+    private String grado;
     private String codigoEstudiante;
-    private String departamento;
+
+    // ELIMINADO: private String departamento;
+    // ELIMINADO: private String carrera;
 }

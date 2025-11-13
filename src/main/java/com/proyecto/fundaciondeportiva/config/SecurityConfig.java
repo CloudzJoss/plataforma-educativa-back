@@ -2,24 +2,25 @@ package com.proyecto.fundaciondeportiva.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-// Asegúrate de importar 'annotation.web.configurers.AbstractHttpConfigurer' si usas la lambda de CSRF
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer; // Para csrf(AbstractHttpConfigurer::disable)
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
-// Ya no necesitamos @EnableMethodSecurity si todo es público
-// @EnableMethodSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -28,21 +29,28 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   AuthenticationProvider authenticationProvider,
+                                                   JwtAuthenticationFilter jwtAuthFilter) throws Exception {
         http
-                // Deshabilita CSRF (recomendado para APIs stateless)
-                .csrf(AbstractHttpConfigurer::disable) // Forma moderna de deshabilitar CSRF
-                // --- CAMBIO PRINCIPAL AQUÍ ---
-                // Configura las reglas de autorización
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Permite TODAS las peticiones sin autenticación
-                        .anyRequest().permitAll()
+                        // Rutas públicas
+                        .requestMatchers("/api/usuarios/crear", "/api/auth/login").permitAll()
+
+                        // AÑADIDO: Permite la ruta /me para el perfil propio (aunque ya tiene @PreAuthorize)
+                        // Para ser más explícito
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/me").authenticated()
+
+                        // Crucial para CORS
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+
+                        // Todas las demás rutas requieren autenticación
+                        .anyRequest().authenticated()
                 )
-                // --- FIN DEL CAMBIO ---
-                // Configura la gestión de sesiones como STATELESS (sin estado)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Define el proveedor de autenticación personalizado (aunque no se usará si todo es permitAll)
-                .authenticationProvider(authenticationProvider);
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -60,4 +68,3 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 }
-
