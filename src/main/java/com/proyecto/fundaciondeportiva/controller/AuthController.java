@@ -5,6 +5,8 @@ import com.proyecto.fundaciondeportiva.dto.output.LoginOutputDTO;
 import com.proyecto.fundaciondeportiva.model.Usuario;
 import com.proyecto.fundaciondeportiva.repository.UsuarioRepository;
 import com.proyecto.fundaciondeportiva.service.JwtService;
+import jakarta.servlet.http.Cookie; // 1. IMPORTAR Cookie
+import jakarta.servlet.http.HttpServletResponse; // 2. IMPORTAR HttpServletResponse
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,27 +32,62 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
+    // 3. AÑADIR HttpServletResponse al método
     @PostMapping("/login")
-    public ResponseEntity<LoginOutputDTO> login(@Valid @RequestBody LoginInputDTO loginInputDTO) {
-        // 1. Spring Security autentica al usuario
+    public ResponseEntity<LoginOutputDTO> login(
+            @Valid @RequestBody LoginInputDTO loginInputDTO,
+            HttpServletResponse response // <-- AÑADIDO
+    ) {
+        // 1. Autenticación (sin cambios)
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginInputDTO.getEmail(), loginInputDTO.getPassword())
         );
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-        // 2. Buscamos los datos completos del usuario para la respuesta
+        // 2. Búsqueda de usuario (sin cambios)
         Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername()).orElseThrow();
 
-        // 3. Generamos el token JWT
+        // 3. Generación de token (sin cambios)
         String token = jwtService.generateToken(userDetails);
 
-        // 4. Creamos y devolvemos la respuesta
-        LoginOutputDTO response = LoginOutputDTO.builder()
-                .token(token)
+        // --- 4. INICIO: LÓGICA DE COOKIE ---
+
+        // 4a. Crear la cookie
+        Cookie jwtCookie = new Cookie("jwt_token", token);
+        jwtCookie.setHttpOnly(true);    // ¡CRUCIAL! Previene acceso desde JavaScript
+        jwtCookie.setSecure(true);      // ¡CRUCIAL! Solo enviar por HTTPS. (Comentar para pruebas en localhost HTTP)
+        jwtCookie.setPath("/");         // Disponible para toda la aplicación
+        jwtCookie.setMaxAge(60 * 60 * 10); // Expira en 10 horas (igual que el token)
+
+        // 4b. Añadir la cookie a la respuesta HTTP
+        response.addCookie(jwtCookie);
+
+        // --- FIN: LÓGICA DE COOKIE ---
+
+        // 5. Crear y devolver la respuesta (¡YA NO SE ENVÍA EL TOKEN EN EL JSON!)
+        LoginOutputDTO responseBody = LoginOutputDTO.builder()
                 .nombre(usuario.getNombre())
                 .rol(usuario.getRol())
-                .build();
+                .build(); // <-- Se quita .token(token)
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(responseBody);
+    }
+
+    // 6. AÑADIR ENDPOINT DE LOGOUT
+    /**
+     * Cierra la sesión invalidando la cookie HttpOnly.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletResponse response) {
+        // Crea una cookie "vacía" que expira inmediatamente
+        Cookie jwtCookie = new Cookie("jwt_token", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(true); // Debe coincidir con la configuración de la cookie de login
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // Expira ahora
+
+        response.addCookie(jwtCookie);
+
+        return ResponseEntity.ok("Cierre de sesión exitoso");
     }
 }

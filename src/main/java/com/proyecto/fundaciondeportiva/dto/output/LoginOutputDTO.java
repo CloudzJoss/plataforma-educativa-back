@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LoginOutputDTO {
 
-    private String token; // El JWT que usará el cliente
     private String nombre;
     private Rol rol;
 }
