@@ -17,6 +17,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -33,17 +39,19 @@ public class SecurityConfig {
                                                    AuthenticationProvider authenticationProvider,
                                                    JwtAuthenticationFilter jwtAuthFilter) throws Exception {
         http
+                // 1. APLICAR LA CONFIGURACIÓN DE CORS DEFINIDA ABAJO
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas
                         .requestMatchers("/api/usuarios/crear", "/api/auth/login").permitAll()
 
-                        // AÑADIDO: Permite la ruta /me para el perfil propio (aunque ya tiene @PreAuthorize)
-                        // Para ser más explícito
+                        // Permite la ruta /me explícitamente
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/me").authenticated()
 
-                        // Crucial para CORS
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        // Crucial para que el navegador pregunte permisos antes de enviar cookies (Preflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Todas las demás rutas requieren autenticación
                         .anyRequest().authenticated()
@@ -53,6 +61,30 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // 2. DEFINIR LAS REGLAS DE CORS
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        configuration.setAllowedOrigins(Arrays.asList(
+                // Tu Frontend en la Nube (SIN LA BARRA FINAL /)
+                "https://plataforma-edu-front-exemfwbmfbczc9fx.chilecentral-01.azurewebsites.net",
+                
+                // Dejamos localhost:3000 por si necesitas probar algo localmente en el futuro
+                "http://localhost:3000"
+        ));
+        
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "x-requested-with", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        
+        // VITAL: Permite el envío de Cookies/Credenciales
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
