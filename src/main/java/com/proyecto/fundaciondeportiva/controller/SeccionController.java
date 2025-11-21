@@ -22,7 +22,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/secciones")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class SeccionController {
 
     private static final Logger logger = LoggerFactory.getLogger(SeccionController.class);
