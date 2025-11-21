@@ -17,12 +17,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -39,18 +33,17 @@ public class SecurityConfig {
                                                    AuthenticationProvider authenticationProvider,
                                                    JwtAuthenticationFilter jwtAuthFilter) throws Exception {
         http
-                // 1. ACTIVAR CORS AQUÍ (Usando la configuración de abajo)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas
                         .requestMatchers("/api/usuarios/crear", "/api/auth/login").permitAll()
 
-                        // Permitir OPTIONS para que el navegador pregunte permisos antes de enviar cookies
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
+                        // AÑADIDO: Permite la ruta /me para el perfil propio (aunque ya tiene @PreAuthorize)
+                        // Para ser más explícito
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/me").authenticated()
+
+                        // Crucial para CORS
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
                         // Todas las demás rutas requieren autenticación
                         .anyRequest().authenticated()
@@ -60,27 +53,6 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    // 2. DEFINIR LA CONFIGURACIÓN DE CORS
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // OJO: Aquí pones la URL de tu Frontend.
-        // Como estás probando local, pones localhost:3000.
-        // Cuando subas tu React a la nube, agregas esa nueva URL a esta lista.
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); 
-        
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
-        
-        // ESTO ES LO VITAL para que se guarden las cookies
-        configuration.setAllowCredentials(true);
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 
     @Bean
