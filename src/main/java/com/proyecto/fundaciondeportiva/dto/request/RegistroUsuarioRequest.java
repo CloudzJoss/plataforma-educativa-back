@@ -1,4 +1,4 @@
-package com.proyecto.fundaciondeportiva.dto.input;
+package com.proyecto.fundaciondeportiva.dto.request;
 
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
 import com.proyecto.fundaciondeportiva.model.enums.Rol;
@@ -13,14 +13,14 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO para registrar un nuevo Usuario (Admin, Profesor o Alumno).
- * REEMPLAZA el contenido de tu 'UsuarioInputDTO' antiguo.
- * Ahora contiene todos los campos del diagrama PlantUML.
+ * Este es el REEMPLAZO de tu 'UsuarioInputDTO' antiguo.
+ * Contiene todos los campos del diagrama PlantUML.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioInputDTO {
+public class RegistroUsuarioRequest {
 
     // --- Campos de Usuario ---
     @NotBlank(message = "El nombre es obligatorio")

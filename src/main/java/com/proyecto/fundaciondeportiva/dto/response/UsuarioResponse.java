@@ -1,4 +1,4 @@
-package com.proyecto.fundaciondeportiva.dto.output;
+package com.proyecto.fundaciondeportiva.dto.response;
 
 import com.proyecto.fundaciondeportiva.model.entity.PerfilAlumno;
 import com.proyecto.fundaciondeportiva.model.entity.PerfilProfesor;
@@ -14,13 +14,14 @@ import java.time.LocalDateTime;
 
 /**
  * DTO para mostrar la información completa de un usuario.
+ * REEMPLAZA a 'UsuarioOutputDTO' antiguo.
  * Este DTO "aplana" la información de Usuario y su Perfil asociado.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioOutputDTO {
+public class UsuarioResponse {
 
     // Campos de Usuario
     private Long id;
@@ -31,12 +32,12 @@ public class UsuarioOutputDTO {
 
     // Campos de PerfilAlumno
     private String codigoEstudiante;
-    private String dniAlumno; // <-- CAMPO CORRECTO
+    private String dniAlumno;
     private NivelAcademico nivel;
     private String grado;
 
     // Campos de PerfilProfesor
-    private String dniProfesor; // <-- CAMPO CORRECTO
+    private String dniProfesor;
     private String telefono;
     private String experiencia;
     private String gradoAcademico;
@@ -44,14 +45,13 @@ public class UsuarioOutputDTO {
     /**
      * Método de fábrica (static factory method) para convertir fácilmente
      * una Entidad Usuario (de la BD) en este DTO (para el Frontend).
-     * ESTE MÉTODO REEMPLAZA la lógica en el controlador.
      */
-    public static UsuarioOutputDTO deEntidad(Usuario usuario) {
+    public static UsuarioResponse deEntidad(Usuario usuario) {
         if (usuario == null) {
             return null;
         }
 
-        UsuarioOutputDTO dto = UsuarioOutputDTO.builder()
+        UsuarioResponse dto = UsuarioResponse.builder()
                 .id(usuario.getId())
                 .nombre(usuario.getNombre())
                 .email(usuario.getEmail())
@@ -59,19 +59,17 @@ public class UsuarioOutputDTO {
                 .fechaCreacion(usuario.getFechaCreacion())
                 .build();
 
-        // Mapea los campos de PerfilAlumno si existen
         if (usuario.getPerfilAlumno() != null) {
             PerfilAlumno perfil = usuario.getPerfilAlumno();
             dto.setCodigoEstudiante(perfil.getCodigoEstudiante());
-            dto.setDniAlumno(perfil.getDni()); // <-- USA EL SETTER CORRECTO
+            dto.setDniAlumno(perfil.getDni());
             dto.setNivel(perfil.getNivel());
             dto.setGrado(perfil.getGrado());
         }
 
-        // Mapea los campos de PerfilProfesor si existen
         if (usuario.getPerfilProfesor() != null) {
             PerfilProfesor perfil = usuario.getPerfilProfesor();
-            dto.setDniProfesor(perfil.getDni()); // <-- USA EL SETTER CORRECTO
+            dto.setDniProfesor(perfil.getDni());
             dto.setTelefono(perfil.getTelefono());
             dto.setExperiencia(perfil.getExperiencia());
             dto.setGradoAcademico(perfil.getGradoAcademico());

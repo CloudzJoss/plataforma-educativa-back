@@ -2,7 +2,7 @@ package com.proyecto.fundaciondeportiva.controller;
 
 import com.proyecto.fundaciondeportiva.dto.input.LoginInputDTO;
 import com.proyecto.fundaciondeportiva.dto.output.LoginOutputDTO;
-import com.proyecto.fundaciondeportiva.model.Usuario;
+import com.proyecto.fundaciondeportiva.model.entity.Usuario;
 import com.proyecto.fundaciondeportiva.repository.UsuarioRepository;
 import com.proyecto.fundaciondeportiva.service.JwtService;
 import jakarta.servlet.http.Cookie; // 1. IMPORTAR Cookie

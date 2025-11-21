@@ -1,7 +1,7 @@
 package com.proyecto.fundaciondeportiva.config;
 
-import com.proyecto.fundaciondeportiva.model.Rol;
-import com.proyecto.fundaciondeportiva.model.Usuario;
+import com.proyecto.fundaciondeportiva.model.enums.Rol;
+import com.proyecto.fundaciondeportiva.model.entity.Usuario;
 import com.proyecto.fundaciondeportiva.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;

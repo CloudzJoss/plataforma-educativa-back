@@ -1,4 +1,5 @@
-package com.proyecto.fundaciondeportiva.dto.output; // Lo mantengo en 'output' como lo tenías
+// --- ARCHIVO: src/main/java/com/proyecto/fundaciondeportiva/dto/request/ActualizarUsuarioRequest.java ---
+package com.proyecto.fundaciondeportiva.dto.request;
 
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
 import jakarta.validation.constraints.Email;
@@ -10,14 +11,14 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO para actualizar un Usuario.
- * REEMPLAZA el contenido de tu 'UsuarioUpdateDTO' antiguo.
+ * Este es el REEMPLAZO de tu 'UsuarioUpdateDTO' antiguo.
  * Todos los campos son opcionales y coinciden con el nuevo modelo.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioUpdateDTO {
+public class ActualizarUsuarioRequest {
 
     // --- Campos de Usuario ---
     @Size(min = 3, max = 100)
