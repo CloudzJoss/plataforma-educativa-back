@@ -1,16 +1,12 @@
 package com.proyecto.fundaciondeportiva.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Entidad 'perfiles_profesor'.
- * Esta es la NUEVA entidad, basada en tu diagrama.
- * Reemplaza tu 'PerfilProfesor.java' antiguo.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,13 +25,13 @@ public class PerfilProfesor {
     @Column(length = 20)
     private String telefono;
 
-    @Lob // Tipo de dato TEXT (largo)
+    @Lob
     private String experiencia;
 
     @Column(name = "grado_academico", length = 100)
     private String gradoAcademico;
 
-    // Relación inversa 1:1
     @OneToOne(mappedBy = "perfilProfesor")
+    @JsonIgnore // 👈 AÑADIDO
     private Usuario usuario;
 }

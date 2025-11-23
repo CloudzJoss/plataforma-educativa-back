@@ -1,5 +1,7 @@
 package com.proyecto.fundaciondeportiva.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -10,10 +12,6 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidad 'matriculas'.
- * Representa la inscripción de un alumno en una sección específica.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -30,16 +28,18 @@ public class Matricula {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "alumno_id", nullable = false)
-    private Usuario alumno; // El alumno que se matricula
+    @JsonIgnoreProperties({"matriculas", "asistencias", "seccionesAsignadas", "cursosCreados", "password"}) // 👈 AÑADIDO
+    private Usuario alumno;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seccion_id", nullable = false)
-    private Seccion seccion; // La sección en la que se matricula
+    @JsonBackReference("seccion-matriculas") // 👈 AÑADIDO - Lado hijo
+    private Seccion seccion;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private EstadoMatricula estado = EstadoMatricula.ACTIVA; // ACTIVA, RETIRADA, COMPLETADA
+    private EstadoMatricula estado = EstadoMatricula.ACTIVA;
 
     @CreationTimestamp
     @Column(name = "fecha_matricula", updatable = false, nullable = false)

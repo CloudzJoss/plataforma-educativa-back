@@ -1,5 +1,7 @@
 package com.proyecto.fundaciondeportiva.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.proyecto.fundaciondeportiva.model.enums.Rol;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -16,20 +18,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Entidad 'usuarios'.
- * Esta es la NUEVA entidad Usuario, basada en tu diagrama.
- * Reemplaza tu 'Usuario.java' antiguo.
- * Implementa UserDetails para la integración con Spring Security.
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "usuarios", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "email") // Email debe ser único
+        @UniqueConstraint(columnNames = "email")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // 👈 AÑADIDO
 public class Usuario implements UserDetails {
 
     @Id
@@ -43,13 +40,14 @@ public class Usuario implements UserDetails {
     private String email;
 
     @Column(nullable = false)
-    private String password; // Almacenará el hash
+    @JsonIgnore // 👈 AÑADIDO - NUNCA serializar el password
+    private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Rol rol;
 
-    @CreationTimestamp // Se asigna automáticamente al crear
+    @CreationTimestamp
     @Column(name = "fecha_creacion", updatable = false, nullable = false)
     private LocalDateTime fechaCreacion;
 
@@ -62,56 +60,62 @@ public class Usuario implements UserDetails {
     @JoinColumn(name = "perfil_profesor_id", referencedColumnName = "id")
     private PerfilProfesor perfilProfesor;
 
-    // --- Relaciones (El otro lado de la relación) ---
+    // --- Relaciones (ignoradas en JSON para evitar recursión) ---
     @OneToMany(mappedBy = "creadoPor")
-    private Set<Curso> cursosCreados; // Rol ADMIN
+    @JsonIgnore // 👈 AÑADIDO
+    private Set<Curso> cursosCreados;
 
     @OneToMany(mappedBy = "profesor")
-    private Set<Seccion> seccionesAsignadas; // Rol PROFESOR
+    @JsonIgnore // 👈 AÑADIDO
+    private Set<Seccion> seccionesAsignadas;
 
     @OneToMany(mappedBy = "alumno")
-    private Set<Matricula> matriculas; // Rol ALUMNO
+    @JsonIgnore // 👈 AÑADIDO
+    private Set<Matricula> matriculas;
 
     @OneToMany(mappedBy = "alumno")
-    private Set<Asistencia> asistencias; // Rol ALUMNO
+    @JsonIgnore // 👈 AÑADIDO
+    private Set<Asistencia> asistencias;
 
-
-    // --- Métodos de Spring Security (UserDetails) ---
-
+    // --- Métodos de Spring Security ---
     @Override
+    @JsonIgnore // 👈 AÑADIDO
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Esta es la "pulsera" 🏷️.
-        // Añadimos "ROLE_" como prefijo estándar de Spring Security.
         return List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
     }
 
     @Override
+    @JsonIgnore // 👈 AÑADIDO
     public String getPassword() {
         return this.password;
     }
 
     @Override
+    @JsonIgnore // 👈 AÑADIDO
     public String getUsername() {
-        // Usamos el email como "username" para Spring Security
         return this.email;
     }
 
     @Override
+    @JsonIgnore // 👈 AÑADIDO
     public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore // 👈 AÑADIDO
     public boolean isAccountNonLocked() {
         return true;
     }
 
     @Override
+    @JsonIgnore // 👈 AÑADIDO
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore // 👈 AÑADIDO
     public boolean isEnabled() {
         return true;
     }

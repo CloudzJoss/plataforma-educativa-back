@@ -1,5 +1,6 @@
 package com.proyecto.fundaciondeportiva.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,11 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Entidad 'perfiles_alumno'.
- * Esta es la NUEVA entidad, basada en tu diagrama.
- * Reemplaza tu 'PerfilAlumno.java' antiguo.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -37,7 +33,7 @@ public class PerfilAlumno {
     @Column(length = 20, nullable = false)
     private String grado;
 
-    // Relación inversa 1:1 (opcional, pero útil)
     @OneToOne(mappedBy = "perfilAlumno")
+    @JsonIgnore // 👈 AÑADIDO
     private Usuario usuario;
 }
