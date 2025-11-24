@@ -29,6 +29,9 @@ public interface SeccionRepository extends JpaRepository<Seccion, Long> {
 
     List<Seccion> findByNivelSeccion(NivelAcademico nivel);
 
+    // Consulta corregida para usar el nombre correcto del método mágico
+    List<Seccion> findByNivelSeccionAndActivaTrue(NivelAcademico nivel);
+
     List<Seccion> findByNivelSeccionAndGradoSeccion(NivelAcademico nivel, String grado);
 
     @Query("SELECT s FROM Seccion s WHERE s.activa = true AND s.fechaInicio <= :fecha AND s.fechaFin >= :fecha")
@@ -36,7 +39,4 @@ public interface SeccionRepository extends JpaRepository<Seccion, Long> {
 
     @Query("SELECT s FROM Seccion s WHERE s.activa = true AND SIZE(s.matriculas) < s.capacidad")
     List<Seccion> findSeccionesConCupoDisponible();
-
-    @Query("SELECT s FROM Seccion s WHERE s.nivelSeccion = :nivel AND s.activa = true")
-    List<Seccion> findByNivelAndActiva(@Param("nivel") NivelAcademico nivel);
 }

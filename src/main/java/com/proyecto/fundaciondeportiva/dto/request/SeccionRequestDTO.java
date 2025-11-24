@@ -10,9 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-/**
- * DTO para crear y actualizar secciones.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -28,7 +25,7 @@ public class SeccionRequestDTO {
 
     @NotBlank(message = "El grado de la sección es obligatorio")
     @Size(max = 20, message = "El grado no puede exceder 20 caracteres")
-    private String gradoSeccion; // Ej: "5to A", "3ro B"
+    private String gradoSeccion;
 
     @NotNull(message = "El turno es obligatorio")
     private Turno turno;

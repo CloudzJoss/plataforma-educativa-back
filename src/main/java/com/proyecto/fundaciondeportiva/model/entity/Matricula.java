@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*; // Importar todo
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -28,12 +25,16 @@ public class Matricula {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "alumno_id", nullable = false)
-    @JsonIgnoreProperties({"matriculas", "asistencias", "seccionesAsignadas", "cursosCreados", "password"}) // 👈 AÑADIDO
+    @JsonIgnoreProperties({"matriculas", "asistencias", "seccionesAsignadas", "cursosCreados", "password"})
+    @ToString.Exclude // 🚨 IMPORTANTE
+    @EqualsAndHashCode.Exclude
     private Usuario alumno;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seccion_id", nullable = false)
-    @JsonBackReference("seccion-matriculas") // 👈 AÑADIDO - Lado hijo
+    @JsonBackReference("seccion-matriculas")
+    @ToString.Exclude // 🚨 IMPORTANTE
+    @EqualsAndHashCode.Exclude
     private Seccion seccion;
 
     @Enumerated(EnumType.STRING)

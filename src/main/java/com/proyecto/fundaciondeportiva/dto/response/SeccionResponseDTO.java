@@ -52,6 +52,7 @@ public class SeccionResponseDTO {
             return null;
         }
 
+        // Usamos los métodos de la entidad que ya calculan esto
         int estudiantesMatriculados = seccion.getNumeroEstudiantesMatriculados();
         int cuposDisponibles = seccion.getCapacidad() - estudiantesMatriculados;
 

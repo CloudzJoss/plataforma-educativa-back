@@ -4,11 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
 import com.proyecto.fundaciondeportiva.model.enums.Turno;
+import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula; // Asegúrate de tener este enum
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*; // Importar todo Lombok
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
@@ -24,7 +22,7 @@ import java.util.Set;
 @Table(name = "secciones", uniqueConstraints = {
         @UniqueConstraint(columnNames = "codigo")
 })
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // 👈 AÑADIDO
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Seccion {
 
     @Id
@@ -69,33 +67,43 @@ public class Seccion {
     @Column(name = "fecha_creacion", updatable = false, nullable = false)
     private LocalDateTime fechaCreacion;
 
-    // --- Relaciones ---
+    // --- Relaciones (CON EXCLUDES PARA EVITAR RECURSIÓN) ---
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curso_id", nullable = false)
-    @JsonIgnoreProperties({"secciones", "creadoPor"}) // 👈 AÑADIDO
+    @JsonIgnoreProperties({"secciones", "creadoPor"})
+    @ToString.Exclude // 🚨 IMPORTANTE
+    @EqualsAndHashCode.Exclude
     private Curso curso;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profesor_id", nullable = false)
-    @JsonIgnoreProperties({"seccionesAsignadas", "matriculas", "asistencias", "cursosCreados", "password"}) // 👈 AÑADIDO
+    @JsonIgnoreProperties({"seccionesAsignadas", "matriculas", "asistencias", "cursosCreados", "password"})
+    @ToString.Exclude // 🚨 IMPORTANTE
+    @EqualsAndHashCode.Exclude
     private Usuario profesor;
 
     @OneToMany(mappedBy = "seccion", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    @JsonManagedReference("seccion-matriculas") // 👈 AÑADIDO - Lado padre
+    @JsonManagedReference("seccion-matriculas")
+    @ToString.Exclude // 🚨 IMPORTANTE: Rompe el ciclo infinito
+    @EqualsAndHashCode.Exclude
     private Set<Matricula> matriculas = new HashSet<>();
 
     @OneToMany(mappedBy = "seccion", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    @JsonIgnoreProperties("seccion") // 👈 AÑADIDO
+    @JsonIgnoreProperties("seccion")
+    @ToString.Exclude // 🚨 IMPORTANTE
+    @EqualsAndHashCode.Exclude
     private Set<Sesion> sesiones = new HashSet<>();
 
     // --- Métodos de utilidad ---
 
     public int getNumeroEstudiantesMatriculados() {
         if (matriculas == null) return 0;
+        // Filtramos solo las matrículas activas
         return (int) matriculas.stream()
-                .filter(m -> m.getEstado() == com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula.ACTIVA)
+                .filter(m -> m.getEstado() == EstadoMatricula.ACTIVA)
                 .count();
     }
 

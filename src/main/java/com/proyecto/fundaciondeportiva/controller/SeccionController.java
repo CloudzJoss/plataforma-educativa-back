@@ -2,7 +2,7 @@ package com.proyecto.fundaciondeportiva.controller;
 
 import com.proyecto.fundaciondeportiva.dto.request.SeccionRequestDTO;
 import com.proyecto.fundaciondeportiva.dto.response.SeccionResponseDTO;
-import com.proyecto.fundaciondeportiva.dto.response.UsuarioResponse;
+import com.proyecto.fundaciondeportiva.model.entity.Usuario;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
 import com.proyecto.fundaciondeportiva.model.enums.Turno;
 import com.proyecto.fundaciondeportiva.service.ServicioSeccion;
@@ -44,22 +44,20 @@ public class SeccionController {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String emailProfesor = auth.getName();
 
-            logger.info("Solicitud de secciones del profesor con email: {}", emailProfesor);
-
-            // 2. Obtener el perfil completo del profesor (usando el método correcto)
-            UsuarioResponse usuarioDTO = servicioUsuario.obtenerUsuarioResponsePorEmail(emailProfesor); // 👈 CORREGIDO
+            // 2. 🚨 CORRECCIÓN: Usar método existente obtenerUsuarioPorEmail
+            Usuario usuario = servicioUsuario.obtenerUsuarioPorEmail(emailProfesor)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
             // 3. Validar que tenga perfil de profesor
-            if (usuarioDTO.getDniProfesor() == null) { // 👈 CORREGIDO
-                throw new RuntimeException("El usuario no tiene un perfil de profesor asociado");
+            if (usuario.getPerfilProfesor() == null || usuario.getPerfilProfesor().getDni() == null) {
+                throw new RuntimeException("El usuario no tiene un perfil de profesor o DNI asociado");
             }
 
-            String dniProfesor = usuarioDTO.getDniProfesor(); // 👈 CORREGIDO
+            String dniProfesor = usuario.getPerfilProfesor().getDni();
             logger.info("DNI del profesor identificado: {}", dniProfesor);
 
             // 4. Buscar secciones por DNI del profesor
             List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesPorDniProfesor(dniProfesor);
-            logger.info("Se encontraron {} secciones para el profesor", secciones.size());
 
             return ResponseEntity.ok(secciones);
 
@@ -69,176 +67,89 @@ public class SeccionController {
         }
     }
 
-    // --- RESTO DE ENDPOINTS (sin cambios) ---
+    // --- RESTO DE ENDPOINTS (ADMINISTRADOR) ---
 
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<SeccionResponseDTO> crearSeccion(@Valid @RequestBody SeccionRequestDTO request) {
-        try {
-            logger.info("Solicitud de creación de sección recibida");
-            SeccionResponseDTO seccionCreada = servicioSeccion.crearSeccion(request);
-            return new ResponseEntity<>(seccionCreada, HttpStatus.CREATED);
-        } catch (Exception e) {
-            logger.error("Error en endpoint crearSeccion", e);
-            throw e;
-        }
+        SeccionResponseDTO seccion = servicioSeccion.crearSeccion(request);
+        return new ResponseEntity<>(seccion, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<SeccionResponseDTO> actualizarSeccion(
-            @PathVariable Long id,
-            @Valid @RequestBody SeccionRequestDTO request) {
-        try {
-            logger.info("Solicitud de actualización de sección ID: {}", id);
-            SeccionResponseDTO seccionActualizada = servicioSeccion.actualizarSeccion(id, request);
-            return ResponseEntity.ok(seccionActualizada);
-        } catch (Exception e) {
-            logger.error("Error en endpoint actualizarSeccion", e);
-            throw e;
-        }
+    public ResponseEntity<SeccionResponseDTO> actualizarSeccion(@PathVariable Long id, @Valid @RequestBody SeccionRequestDTO request) {
+        return ResponseEntity.ok(servicioSeccion.actualizarSeccion(id, request));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminarSeccion(@PathVariable Long id) {
-        try {
-            logger.info("Solicitud de eliminación de sección ID: {}", id);
-            servicioSeccion.eliminarSeccion(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            logger.error("Error en endpoint eliminarSeccion", e);
-            throw e;
-        }
+        servicioSeccion.eliminarSeccion(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/desactivar")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> desactivarSeccion(@PathVariable Long id) {
-        try {
-            logger.info("Solicitud de desactivación de sección ID: {}", id);
-            servicioSeccion.desactivarSeccion(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            logger.error("Error en endpoint desactivarSeccion", e);
-            throw e;
-        }
+        servicioSeccion.desactivarSeccion(id);
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/activar")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> activarSeccion(@PathVariable Long id) {
-        try {
-            logger.info("Solicitud de activación de sección ID: {}", id);
-            servicioSeccion.activarSeccion(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            logger.error("Error en endpoint activarSeccion", e);
-            throw e;
-        }
+        servicioSeccion.activarSeccion(id);
+        return ResponseEntity.ok().build();
     }
+
+    // --- Endpoints Públicos ---
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarTodasLasSecciones() {
-        try {
-            logger.info("Solicitud de listado de todas las secciones");
-            List<SeccionResponseDTO> secciones = servicioSeccion.listarTodasLasSecciones();
-            return ResponseEntity.ok(secciones);
-        } catch (Exception e) {
-            logger.error("Error en endpoint listarTodasLasSecciones", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.listarTodasLasSecciones());
     }
 
     @GetMapping("/activas")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesActivas() {
-        try {
-            logger.info("Solicitud de listado de secciones activas");
-            List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesActivas();
-            return ResponseEntity.ok(secciones);
-        } catch (Exception e) {
-            logger.error("Error en endpoint listarSeccionesActivas", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.listarSeccionesActivas());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SeccionResponseDTO> obtenerSeccionPorId(@PathVariable Long id) {
-        try {
-            logger.info("Solicitud de sección por ID: {}", id);
-            SeccionResponseDTO seccion = servicioSeccion.obtenerSeccionPorId(id);
-            return ResponseEntity.ok(seccion);
-        } catch (Exception e) {
-            logger.error("Error en endpoint obtenerSeccionPorId", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.obtenerSeccionPorId(id));
     }
 
     @GetMapping("/curso/{cursoId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesPorCurso(@PathVariable Long cursoId) {
-        try {
-            logger.info("Solicitud de secciones del curso ID: {}", cursoId);
-            List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesPorCurso(cursoId);
-            return ResponseEntity.ok(secciones);
-        } catch (Exception e) {
-            logger.error("Error en endpoint listarSeccionesPorCurso", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.listarSeccionesPorCurso(cursoId));
     }
 
     @GetMapping("/profesor/{profesorId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesPorProfesor(@PathVariable Long profesorId) {
-        try {
-            logger.info("Solicitud de secciones del profesor ID: {}", profesorId);
-            List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesPorProfesor(profesorId);
-            return ResponseEntity.ok(secciones);
-        } catch (Exception e) {
-            logger.error("Error en endpoint listarSeccionesPorProfesor", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.listarSeccionesPorProfesor(profesorId));
     }
 
     @GetMapping("/turno/{turno}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesPorTurno(@PathVariable Turno turno) {
-        try {
-            logger.info("Solicitud de secciones del turno: {}", turno);
-            List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesPorTurno(turno);
-            return ResponseEntity.ok(secciones);
-        } catch (Exception e) {
-            logger.error("Error en endpoint listarSeccionesPorTurno", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.listarSeccionesPorTurno(turno));
     }
 
     @GetMapping("/nivel/{nivel}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesPorNivel(@PathVariable NivelAcademico nivel) {
-        try {
-            logger.info("Solicitud de secciones del nivel: {}", nivel);
-            List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesPorNivel(nivel);
-            return ResponseEntity.ok(secciones);
-        } catch (Exception e) {
-            logger.error("Error en endpoint listarSeccionesPorNivel", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.listarSeccionesPorNivel(nivel));
     }
 
     @GetMapping("/con-cupo")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesConCupo() {
-        try {
-            logger.info("Solicitud de secciones con cupo disponible");
-            List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesConCupo();
-            return ResponseEntity.ok(secciones);
-        } catch (Exception e) {
-            logger.error("Error en endpoint listarSeccionesConCupo", e);
-            throw e;
-        }
+        return ResponseEntity.ok(servicioSeccion.listarSeccionesConCupo());
     }
 }
