@@ -2,6 +2,7 @@ package com.proyecto.fundaciondeportiva.controller;
 
 import com.proyecto.fundaciondeportiva.dto.input.LoginInputDTO;
 import com.proyecto.fundaciondeportiva.dto.output.LoginOutputDTO;
+import com.proyecto.fundaciondeportiva.dto.response.UsuarioResponse;
 import com.proyecto.fundaciondeportiva.model.entity.Usuario;
 import com.proyecto.fundaciondeportiva.repository.UsuarioRepository;
 import com.proyecto.fundaciondeportiva.service.JwtService;
@@ -13,11 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -89,5 +89,20 @@ public class AuthController {
         response.addCookie(jwtCookie);
 
         return ResponseEntity.ok("Cierre de sesión exitoso");
+    }
+
+    // ✅ ENDPOINT /me CORREGIDO PARA USAR TU DTO
+    @GetMapping("/me")
+    @Transactional(readOnly = true) // ✅ Evita el error 500 (LazyInitializationException)
+    public ResponseEntity<UsuarioResponse> getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Usamos tu método estático existente. Gracias al @Transactional arriba,
+        // hibernate podrá hacer los getPerfilAlumno() sin fallar.
+        return ResponseEntity.ok(UsuarioResponse.deEntidad(usuario));
     }
 }
