@@ -60,4 +60,14 @@ public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
      */
     @Query("SELECT m FROM Matricula m WHERE m.alumno.perfilAlumno.dni = :dni")
     List<Matricula> findByAlumnoDni(@Param("dni") String dni);
+
+    /**
+     * Verifica si un alumno ya tiene una matrícula ACTIVA en un CURSO específico (independiente de la sección).
+     * Esto evita duplicidad de cursos.
+     */
+    @Query("SELECT COUNT(m) > 0 FROM Matricula m " +
+            "WHERE m.alumno.id = :alumnoId " +
+            "AND m.seccion.curso.id = :cursoId " +
+            "AND m.estado = 'ACTIVA'")
+    boolean existeMatriculaActivaEnCurso(@Param("alumnoId") Long alumnoId, @Param("cursoId") Long cursoId);
 }

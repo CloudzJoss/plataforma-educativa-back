@@ -73,35 +73,45 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 throw new ValidacionException("La sección ya ha finalizado.");
             }
 
-            // 4. Validar que el alumno no esté ya matriculado
+            // 4. Validar que el alumno no esté ya matriculado en ESTA sección específica
             if (matriculaRepository.existsByAlumnoIdAndSeccionId(alumnoId, request.getSeccionId())) {
                 throw new ValidacionException("Ya estás matriculado en esta sección");
             }
 
-            // 5. Validar que haya cupo disponible
+            // --- 5. 🔒 NUEVA VALIDACIÓN: NO REPETIR CURSO ---
+            // Verificamos si el alumno ya tiene una matrícula activa para ESTE CURSO (en cualquier sección)
+            Long cursoId = seccion.getCurso().getId();
+            boolean yaTieneCurso = matriculaRepository.existeMatriculaActivaEnCurso(alumnoId, cursoId);
+
+            if (yaTieneCurso) {
+                throw new ValidacionException("Ya estás matriculado en una sección del curso '" + seccion.getCurso().getTitulo() + "'. No puedes inscribirte dos veces en el mismo curso.");
+            }
+            // ----------------------------------------------
+
+            // 6. Validar que haya cupo disponible
             long matriculasActivas = matriculaRepository.countMatriculasActivasBySeccionId(request.getSeccionId());
             if (matriculasActivas >= seccion.getCapacidad()) {
                 throw new ValidacionException("La sección ha alcanzado su capacidad máxima.");
             }
 
-            // --- 🔒 VALIDACIÓN ESTRICTA DE NIVEL Y GRADO ---
+            // --- 7. VALIDACIÓN ESTRICTA DE NIVEL Y GRADO ---
 
-            // 6.1 Validar Nivel
+            // 7.1 Validar Nivel
             if (!alumno.getPerfilAlumno().getNivel().equals(seccion.getNivelSeccion())) {
                 throw new ValidacionException(
-                        String.format("Nivel incorrecto. Tu eres de %s y la sección es de %s",
+                        String.format("Nivel incorrecto. Tú eres de %s y la sección es de %s",
                                 alumno.getPerfilAlumno().getNivel(), seccion.getNivelSeccion())
                 );
             }
 
-            // 6.2 Validar Grado (Extrayendo solo el número para comparar)
+            // 7.2 Validar Grado (Extrayendo solo el número para comparar)
             Integer gradoAlumno = extraerNumeroGrado(alumno.getPerfilAlumno().getGrado());
             Integer gradoSeccion = extraerNumeroGrado(seccion.getGradoSeccion());
 
             if (gradoAlumno != null && gradoSeccion != null) {
                 if (!gradoAlumno.equals(gradoSeccion)) {
                     throw new ValidacionException(
-                            String.format("Grado incorrecto. Tu estás en %sº grado y la sección es para %sº grado.",
+                            String.format("Grado incorrecto. Tú estás en %sº grado y la sección es para %sº grado.",
                                     gradoAlumno, gradoSeccion)
                     );
                 }
@@ -115,7 +125,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 }
             }
 
-            // 7. Crear la matrícula
+            // 8. Crear la matrícula
             Matricula nuevaMatricula = Matricula.builder()
                     .alumno(alumno)
                     .seccion(seccion)
