@@ -78,7 +78,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 throw new ValidacionException("Ya estás matriculado en esta sección");
             }
 
-            // --- 5. 🔒 NUEVA VALIDACIÓN: NO REPETIR CURSO ---
+            // --- 5. 🔒 VALIDACIÓN: NO REPETIR CURSO ---
             // Verificamos si el alumno ya tiene una matrícula activa para ESTE CURSO (en cualquier sección)
             Long cursoId = seccion.getCurso().getId();
             boolean yaTieneCurso = matriculaRepository.existeMatriculaActivaEnCurso(alumnoId, cursoId);
@@ -116,12 +116,10 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                     );
                 }
             } else {
-                // Fallback: Si no se pudieron extraer números, comparamos los textos exactos
+                // Fallback: Comparación de texto estricta si falla la numérica
                 if (!alumno.getPerfilAlumno().getGrado().equalsIgnoreCase(seccion.getGradoSeccion())) {
                     logger.warn("Comparación de grados por texto estricto: {} vs {}",
                             alumno.getPerfilAlumno().getGrado(), seccion.getGradoSeccion());
-                    // Puedes descomentar esto si quieres ser muy estricto con el texto:
-                    // throw new ValidacionException("El grado no coincide.");
                 }
             }
 
@@ -144,9 +142,6 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
         }
     }
 
-    // ... (RESTO DE MÉTODOS IGUALES: retirarseDeSeccion, listarMisMatriculas, etc.) ...
-    // Solo copio el nuevo método privado y los métodos existentes para mantener el archivo compilable
-
     @Override
     @Transactional
     public MatriculaResponseDTO retirarseDeSeccion(Long alumnoId, Long seccionId) {
@@ -159,6 +154,26 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
         matricula.setEstado(EstadoMatricula.RETIRADA);
         matricula.setFechaRetiro(LocalDateTime.now());
         return MatriculaResponseDTO.deEntidad(matriculaRepository.save(matricula));
+    }
+
+    // --- NUEVO MÉTODO: ELIMINAR MATRÍCULA (Baja Definitiva) ---
+    @Override
+    @Transactional
+    public void eliminarMatriculaEstudiante(Long alumnoId, Long seccionId) {
+        logger.info("Alumno ID {} solicita eliminar su matrícula de sección ID {}", alumnoId, seccionId);
+
+        // 1. Buscar la matrícula específica de ese alumno y esa sección
+        Matricula matricula = matriculaRepository.findByAlumnoIdAndSeccionId(alumnoId, seccionId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No tienes una matrícula registrada en esta sección"));
+
+        // 2. Validaciones de negocio
+        if (matricula.getCalificacionFinal() != null) {
+            throw new ValidacionException("No puedes eliminar una matrícula que ya tiene calificación. Debes solicitar un retiro.");
+        }
+
+        // 3. Eliminar físicamente
+        matriculaRepository.delete(matricula);
+        logger.info("Matrícula eliminada físicamente.");
     }
 
     @Override
@@ -235,17 +250,10 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
     }
 
     // --- MÉTODO AUXILIAR PARA EXTRAER EL NÚMERO DEL GRADO ---
-    /**
-     * Extrae el primer número entero encontrado en una cadena.
-     * Ej: "5to Grado" -> 5, "1er Grado" -> 1, "Grado 3" -> 3
-     */
     private Integer extraerNumeroGrado(String textoGrado) {
         if (textoGrado == null) return null;
-
-        // Expresión regular para encontrar dígitos
         Pattern p = Pattern.compile("\\d+");
         Matcher m = p.matcher(textoGrado);
-
         if (m.find()) {
             try {
                 return Integer.parseInt(m.group());

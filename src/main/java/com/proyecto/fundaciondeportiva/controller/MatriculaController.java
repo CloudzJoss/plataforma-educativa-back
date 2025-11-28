@@ -66,14 +66,13 @@ public class MatriculaController {
     }
 
     /**
-     * El alumno se retira de una sección
+     * El alumno se retira de una sección (cambio de estado a RETIRADA)
      * DELETE /api/matriculas/retirarse/{seccionId}
      */
     @DeleteMapping("/retirarse/{seccionId}")
     @PreAuthorize("hasRole('ALUMNO')")
     public ResponseEntity<MatriculaResponseDTO> retirarseDeSeccion(@PathVariable Long seccionId) {
         try {
-            // Obtener el ID del alumno autenticado
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String emailAlumno = auth.getName();
 
@@ -88,6 +87,33 @@ public class MatriculaController {
 
         } catch (Exception e) {
             logger.error("Error en endpoint retirarseDeSeccion", e);
+            throw e;
+        }
+    }
+
+    /**
+     * El alumno elimina su matrícula definitivamente (Se da de baja completamente de la BD)
+     * DELETE /api/matriculas/eliminar/{seccionId}
+     */
+    @DeleteMapping("/eliminar/{seccionId}")
+    @PreAuthorize("hasRole('ALUMNO')")
+    public ResponseEntity<Void> eliminarMatriculaEstudiante(@PathVariable Long seccionId) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String emailAlumno = auth.getName();
+
+            logger.info("Alumno {} solicita ELIMINAR matrícula de sección ID {}", emailAlumno, seccionId);
+
+            // Obtenemos el ID del alumno
+            UsuarioResponse usuarioDTO = servicioUsuario.obtenerUsuarioResponsePorEmail(emailAlumno);
+            Long alumnoId = usuarioDTO.getId();
+
+            servicioMatricula.eliminarMatriculaEstudiante(alumnoId, seccionId);
+
+            return ResponseEntity.noContent().build(); // 204 No Content
+
+        } catch (Exception e) {
+            logger.error("Error en endpoint eliminarMatriculaEstudiante", e);
             throw e;
         }
     }
@@ -273,7 +299,7 @@ public class MatriculaController {
     }
 
     /**
-     * Eliminar una matrícula
+     * Eliminar una matrícula (ADMIN)
      * DELETE /api/matriculas/{id}
      */
     @DeleteMapping("/{id}")
