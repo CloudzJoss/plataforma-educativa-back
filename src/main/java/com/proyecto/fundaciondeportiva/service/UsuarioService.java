@@ -254,10 +254,30 @@ public class UsuarioService implements UserDetailsService {
 
     @Transactional
     public void eliminarUsuario(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new RecursoNoEncontradoException("Usuario no encontrado con id: " + id);
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con id: " + id));
+
+        // --- VALIDACIÓN OPCIÓN A (ESTRICTA) ---
+
+        // CASO 1: Si es ALUMNO, verificamos si tiene historial
+        if (usuario.getRol() == Rol.ALUMNO) {
+            // Accedemos a la lista para ver si tiene datos (dentro de @Transactional funciona el Lazy Loading)
+            if (usuario.getMatriculas() != null && !usuario.getMatriculas().isEmpty()) {
+                throw new ValidacionException("No se puede eliminar al alumno '" + usuario.getNombre() +
+                        "' porque tiene matrículas registradas. Debe eliminar sus matrículas primero.");
+            }
         }
-        usuarioRepository.deleteById(id);
+
+        // CASO 2: Si es PROFESOR, verificamos si dicta clases
+        else if (usuario.getRol() == Rol.PROFESOR) {
+            if (usuario.getSeccionesAsignadas() != null && !usuario.getSeccionesAsignadas().isEmpty()) {
+                throw new ValidacionException("No se puede eliminar al profesor '" + usuario.getNombre() +
+                        "' porque tiene secciones asignadas. Reasigne sus cursos a otro profesor antes de eliminarlo.");
+            }
+        }
+
+        // Si pasa las validaciones, se elimina (borra también su perfil por cascada)
+        usuarioRepository.delete(usuario);
     }
 
     // --- Métodos Helper ---
