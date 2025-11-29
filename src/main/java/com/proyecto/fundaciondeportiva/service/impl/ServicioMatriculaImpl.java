@@ -4,11 +4,13 @@ import com.proyecto.fundaciondeportiva.dto.request.MatriculaRequestDTO;
 import com.proyecto.fundaciondeportiva.dto.response.MatriculaResponseDTO;
 import com.proyecto.fundaciondeportiva.exception.RecursoNoEncontradoException;
 import com.proyecto.fundaciondeportiva.exception.ValidacionException;
+import com.proyecto.fundaciondeportiva.model.entity.Horario;
 import com.proyecto.fundaciondeportiva.model.entity.Matricula;
 import com.proyecto.fundaciondeportiva.model.entity.Seccion;
 import com.proyecto.fundaciondeportiva.model.entity.Usuario;
 import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import com.proyecto.fundaciondeportiva.model.enums.Rol;
+import com.proyecto.fundaciondeportiva.repository.HorarioRepository; // ✅ IMPORTANTE
 import com.proyecto.fundaciondeportiva.repository.MatriculaRepository;
 import com.proyecto.fundaciondeportiva.repository.SeccionRepository;
 import com.proyecto.fundaciondeportiva.repository.UsuarioRepository;
@@ -39,6 +41,9 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private HorarioRepository horarioRepository; // ✅ INYECCIÓN PARA VALIDAR CRUCES
 
     // --- OPERACIONES DE ALUMNO ---
 
@@ -123,7 +128,35 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 }
             }
 
-            // 8. Crear la matrícula
+            // --- 8. 🔒 VALIDAR CRUCE DE HORARIOS (ALUMNO) ---
+            // Obtenemos los horarios de la nueva sección
+            List<Horario> horariosNuevos = seccion.getHorarios();
+
+            // Obtenemos todos los horarios que ya tiene ocupados el alumno
+            List<Horario> horariosOcupados = horarioRepository.findHorariosDeAlumno(alumnoId);
+
+            for (Horario nuevo : horariosNuevos) {
+                for (Horario ocupado : horariosOcupados) {
+                    // 1. ¿Es el mismo día?
+                    if (nuevo.getDiaSemana() == ocupado.getDiaSemana()) {
+                        // 2. ¿Se solapan las horas?
+                        // Lógica: (InicioNuevo < FinOcupado) Y (FinNuevo > InicioOcupado)
+                        boolean solapa = nuevo.getHoraInicio().isBefore(ocupado.getHoraFin()) &&
+                                nuevo.getHoraFin().isAfter(ocupado.getHoraInicio());
+
+                        if (solapa) {
+                            throw new ValidacionException(
+                                    String.format("Conflicto de horario: El %s de %s a %s choca con tu curso de '%s'",
+                                            nuevo.getDiaSemana(), nuevo.getHoraInicio(), nuevo.getHoraFin(),
+                                            ocupado.getSeccion().getCurso().getTitulo())
+                            );
+                        }
+                    }
+                }
+            }
+            // ---------------------------------------------------
+
+            // 9. Crear la matrícula
             Matricula nuevaMatricula = Matricula.builder()
                     .alumno(alumno)
                     .seccion(seccion)
@@ -156,7 +189,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
         return MatriculaResponseDTO.deEntidad(matriculaRepository.save(matricula));
     }
 
-    // --- NUEVO MÉTODO: ELIMINAR MATRÍCULA (Baja Definitiva) ---
+    // --- MÉTODO: ELIMINAR MATRÍCULA (Baja Definitiva) ---
     @Override
     @Transactional
     public void eliminarMatriculaEstudiante(Long alumnoId, Long seccionId) {
