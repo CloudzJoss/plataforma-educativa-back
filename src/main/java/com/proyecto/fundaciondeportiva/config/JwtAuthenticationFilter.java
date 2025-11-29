@@ -70,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     newCookie.setHttpOnly(true);
                     newCookie.setSecure(true);
                     newCookie.setPath("/");
-                    newCookie.setMaxAge(15 * 60); // 15 minutos más de vida
+                    newCookie.setMaxAge(60); // 15 minutos más de vida
 
                     response.addCookie(newCookie);
                     // -------------------------------------------------------

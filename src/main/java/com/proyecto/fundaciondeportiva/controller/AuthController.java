@@ -52,7 +52,7 @@ public class AuthController {
         jwtCookie.setPath("/");
 
         // 🕒 CAMBIO: La cookie expira en 15 minutos (900 segundos)
-        jwtCookie.setMaxAge(15 * 60);
+        jwtCookie.setMaxAge(60);
 
         response.addCookie(jwtCookie);
 
