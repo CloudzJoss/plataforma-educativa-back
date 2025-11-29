@@ -1,8 +1,8 @@
 package com.proyecto.fundaciondeportiva.dto.response;
 
+import com.proyecto.fundaciondeportiva.dto.request.HorarioDTO;
 import com.proyecto.fundaciondeportiva.model.entity.Seccion;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-import com.proyecto.fundaciondeportiva.model.enums.Turno;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -22,13 +24,16 @@ public class SeccionResponseDTO {
     private String nombre;
     private NivelAcademico nivelSeccion;
     private String gradoSeccion;
-    private Turno turno;
+    // ❌ ELIMINADO: private Turno turno;
     private String aula;
     private Integer capacidad;
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     private Boolean activa;
     private LocalDateTime fechaCreacion;
+
+    // ✅ AGREGADO: Lista de horarios para mostrar en el frontend
+    private List<HorarioDTO> horarios;
 
     // Información del curso
     private Long cursoId;
@@ -48,13 +53,15 @@ public class SeccionResponseDTO {
     private Boolean enPeriodoActivo;
 
     public static SeccionResponseDTO deEntidad(Seccion seccion) {
-        if (seccion == null) {
-            return null;
-        }
+        if (seccion == null) return null;
 
-        // Usamos los métodos de la entidad que ya calculan esto
         int estudiantesMatriculados = seccion.getNumeroEstudiantesMatriculados();
         int cuposDisponibles = seccion.getCapacidad() - estudiantesMatriculados;
+
+        // Convertir la lista de entidades Horario a DTOs
+        List<HorarioDTO> horariosDTO = seccion.getHorarios().stream()
+                .map(h -> new HorarioDTO(h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin()))
+                .collect(Collectors.toList());
 
         return SeccionResponseDTO.builder()
                 .id(seccion.getId())
@@ -62,7 +69,8 @@ public class SeccionResponseDTO {
                 .nombre(seccion.getNombre())
                 .nivelSeccion(seccion.getNivelSeccion())
                 .gradoSeccion(seccion.getGradoSeccion())
-                .turno(seccion.getTurno())
+                // .turno(seccion.getTurno()) // ❌ Eliminado
+                .horarios(horariosDTO) // ✅ Agregado
                 .aula(seccion.getAula())
                 .capacidad(seccion.getCapacidad())
                 .fechaInicio(seccion.getFechaInicio())

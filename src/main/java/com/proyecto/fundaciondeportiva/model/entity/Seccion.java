@@ -2,16 +2,17 @@ package com.proyecto.fundaciondeportiva.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-import com.proyecto.fundaciondeportiva.model.enums.Turno;
-import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula; // Asegúrate de tener este enum
 import jakarta.persistence.*;
-import lombok.*; // Importar todo Lombok
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -42,9 +43,7 @@ public class Seccion {
     @Column(name = "grado_seccion", length = 20, nullable = false)
     private String gradoSeccion;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Turno turno;
+    // ❌ ELIMINADO: private Turno turno;
 
     @Column(length = 50)
     private String aula;
@@ -67,41 +66,46 @@ public class Seccion {
     @Column(name = "fecha_creacion", updatable = false, nullable = false)
     private LocalDateTime fechaCreacion;
 
-    // --- Relaciones (CON EXCLUDES PARA EVITAR RECURSIÓN) ---
+    // --- Relaciones ---
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curso_id", nullable = false)
     @JsonIgnoreProperties({"secciones", "creadoPor"})
-    @ToString.Exclude // 🚨 IMPORTANTE
+    @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Curso curso;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profesor_id", nullable = false)
     @JsonIgnoreProperties({"seccionesAsignadas", "matriculas", "asistencias", "cursosCreados", "password"})
-    @ToString.Exclude // 🚨 IMPORTANTE
+    @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Usuario profesor;
+
+    // ✅ NUEVA RELACIÓN: HORARIOS
+    @OneToMany(mappedBy = "seccion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Horario> horarios = new ArrayList<>();
 
     @OneToMany(mappedBy = "seccion", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @JsonManagedReference("seccion-matriculas")
-    @ToString.Exclude // 🚨 IMPORTANTE: Rompe el ciclo infinito
+    @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Matricula> matriculas = new HashSet<>();
 
-    @OneToMany(mappedBy = "seccion", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @JsonIgnoreProperties("seccion")
-    @ToString.Exclude // 🚨 IMPORTANTE
-    @EqualsAndHashCode.Exclude
-    private Set<Sesion> sesiones = new HashSet<>();
-
     // --- Métodos de utilidad ---
+
+    public void agregarHorario(Horario horario) {
+        horarios.add(horario);
+        horario.setSeccion(this);
+    }
 
     public int getNumeroEstudiantesMatriculados() {
         if (matriculas == null) return 0;
-        // Filtramos solo las matrículas activas
         return (int) matriculas.stream()
                 .filter(m -> m.getEstado() == EstadoMatricula.ACTIVA)
                 .count();

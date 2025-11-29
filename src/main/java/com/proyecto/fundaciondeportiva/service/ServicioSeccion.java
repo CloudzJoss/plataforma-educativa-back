@@ -3,7 +3,6 @@ package com.proyecto.fundaciondeportiva.service;
 import com.proyecto.fundaciondeportiva.dto.request.SeccionRequestDTO;
 import com.proyecto.fundaciondeportiva.dto.response.SeccionResponseDTO;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-import com.proyecto.fundaciondeportiva.model.enums.Turno;
 
 import java.util.List;
 
@@ -24,7 +23,8 @@ public interface ServicioSeccion {
     List<SeccionResponseDTO> listarSeccionesPorProfesor(Long profesorId);
     List<SeccionResponseDTO> listarSeccionesPorDniProfesor(String dni);
 
-    List<SeccionResponseDTO> listarSeccionesPorTurno(Turno turno);
+    // ELIMINADO: List<SeccionResponseDTO> listarSeccionesPorTurno(Turno turno);
+
     List<SeccionResponseDTO> listarSeccionesConCupo();
     List<SeccionResponseDTO> listarSeccionesPorNivel(NivelAcademico nivel);
 }

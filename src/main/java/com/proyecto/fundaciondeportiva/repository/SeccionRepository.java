@@ -2,7 +2,6 @@ package com.proyecto.fundaciondeportiva.repository;
 
 import com.proyecto.fundaciondeportiva.model.entity.Seccion;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-import com.proyecto.fundaciondeportiva.model.enums.Turno;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,17 +24,13 @@ public interface SeccionRepository extends JpaRepository<Seccion, Long> {
 
     List<Seccion> findByProfesorId(Long profesorId);
 
-    List<Seccion> findByTurno(Turno turno);
+    // ELIMINADO: List<Seccion> findByTurno(Turno turno);
 
     List<Seccion> findByNivelSeccion(NivelAcademico nivel);
 
-    // Consulta corregida para usar el nombre correcto del método mágico
     List<Seccion> findByNivelSeccionAndActivaTrue(NivelAcademico nivel);
 
     List<Seccion> findByNivelSeccionAndGradoSeccion(NivelAcademico nivel, String grado);
-
-    @Query("SELECT s FROM Seccion s WHERE s.activa = true AND s.fechaInicio <= :fecha AND s.fechaFin >= :fecha")
-    List<Seccion> findSeccionesActivasEnFecha(@Param("fecha") LocalDate fecha);
 
     @Query("SELECT s FROM Seccion s WHERE s.activa = true AND SIZE(s.matriculas) < s.capacidad")
     List<Seccion> findSeccionesConCupoDisponible();
