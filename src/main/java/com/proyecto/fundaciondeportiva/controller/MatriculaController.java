@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador REST para la gestión de Matrículas
+ * Controlador REST para la gestión de Matrículas.
+ * Maneja operaciones de alumnos, profesores y administradores.
  */
 @RestController
 @RequestMapping("/api/matriculas")
@@ -34,27 +35,29 @@ public class MatriculaController {
     @Autowired
     private UsuarioService servicioUsuario;
 
-    // --- ENDPOINTS DE ALUMNO ---
+    // ==================== ENDPOINTS DE ALUMNO ====================
 
     /**
      * El alumno se matricula en una sección
      * POST /api/matriculas/matricularse
+     * Body: { "seccionId": 1, "observaciones": "opcional" }
      */
     @PostMapping("/matricularse")
     @PreAuthorize("hasRole('ALUMNO')")
-    public ResponseEntity<MatriculaResponseDTO> matricularseEnSeccion(@Valid @RequestBody MatriculaRequestDTO request) {
+    public ResponseEntity<MatriculaResponseDTO> matricularseEnSeccion(
+            @Valid @RequestBody MatriculaRequestDTO request) {
         try {
-            // Obtener el ID del alumno autenticado
+            // Obtener el ID del alumno autenticado desde el JWT
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String emailAlumno = auth.getName();
 
             logger.info("Alumno {} solicita matricularse en sección ID {}", emailAlumno, request.getSeccionId());
 
-            // Obtener el usuario completo por email
+            // Obtener usuario completo
             UsuarioResponse usuarioDTO = servicioUsuario.obtenerUsuarioResponsePorEmail(emailAlumno);
             Long alumnoId = usuarioDTO.getId();
 
-            // Procesar la matrícula
+            // Procesar matrícula
             MatriculaResponseDTO matriculaCreada = servicioMatricula.matricularseEnSeccion(alumnoId, request);
 
             return new ResponseEntity<>(matriculaCreada, HttpStatus.CREATED);
@@ -66,7 +69,8 @@ public class MatriculaController {
     }
 
     /**
-     * El alumno se retira de una sección (cambio de estado a RETIRADA)
+     * El alumno se retira de una sección (cambio de estado a RETIRADA).
+     * Mantiene el registro pero marca como retirado.
      * DELETE /api/matriculas/retirarse/{seccionId}
      */
     @DeleteMapping("/retirarse/{seccionId}")
@@ -92,7 +96,8 @@ public class MatriculaController {
     }
 
     /**
-     * El alumno elimina su matrícula definitivamente (Se da de baja completamente de la BD)
+     * El alumno elimina su matrícula definitivamente (baja completa de BD).
+     * Solo es posible si no tiene calificación y el período no ha finalizado.
      * DELETE /api/matriculas/eliminar/{seccionId}
      */
     @DeleteMapping("/eliminar/{seccionId}")
@@ -104,7 +109,6 @@ public class MatriculaController {
 
             logger.info("Alumno {} solicita ELIMINAR matrícula de sección ID {}", emailAlumno, seccionId);
 
-            // Obtenemos el ID del alumno
             UsuarioResponse usuarioDTO = servicioUsuario.obtenerUsuarioResponsePorEmail(emailAlumno);
             Long alumnoId = usuarioDTO.getId();
 
@@ -119,7 +123,7 @@ public class MatriculaController {
     }
 
     /**
-     * El alumno ve todas sus matrículas
+     * El alumno ve todas sus matrículas (activas e inactivas).
      * GET /api/matriculas/mis-matriculas
      */
     @GetMapping("/mis-matriculas")
@@ -145,7 +149,7 @@ public class MatriculaController {
     }
 
     /**
-     * El alumno ve solo sus matrículas activas
+     * El alumno ve solo sus matrículas activas.
      * GET /api/matriculas/mis-matriculas/activas
      */
     @GetMapping("/mis-matriculas/activas")
@@ -170,15 +174,17 @@ public class MatriculaController {
         }
     }
 
-    // --- ENDPOINTS DE PROFESOR ---
+    // ==================== ENDPOINTS DE PROFESOR ====================
 
     /**
-     * El profesor ve todos los alumnos de una sección
+     * El profesor ve todos los alumnos de una sección (activos e inactivos).
+     * Validación: Solo los profesores de esa sección pueden verlo.
      * GET /api/matriculas/seccion/{seccionId}/alumnos
      */
     @GetMapping("/seccion/{seccionId}/alumnos")
     @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<MatriculaResponseDTO>> listarAlumnosDeSeccion(@PathVariable Long seccionId) {
+    public ResponseEntity<List<MatriculaResponseDTO>> listarAlumnosDeSeccion(
+            @PathVariable Long seccionId) {
         try {
             logger.info("Consultando alumnos de la sección ID: {}", seccionId);
 
@@ -193,12 +199,13 @@ public class MatriculaController {
     }
 
     /**
-     * El profesor ve solo los alumnos activos de una sección
+     * El profesor ve solo los alumnos activos de una sección.
      * GET /api/matriculas/seccion/{seccionId}/alumnos/activos
      */
     @GetMapping("/seccion/{seccionId}/alumnos/activos")
     @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<MatriculaResponseDTO>> listarAlumnosActivosDeSeccion(@PathVariable Long seccionId) {
+    public ResponseEntity<List<MatriculaResponseDTO>> listarAlumnosActivosDeSeccion(
+            @PathVariable Long seccionId) {
         try {
             logger.info("Consultando alumnos activos de la sección ID: {}", seccionId);
 
@@ -213,8 +220,8 @@ public class MatriculaController {
     }
 
     /**
-     * Asignar calificación a un alumno
-     * PATCH /api/matriculas/{id}/calificacion
+     * El profesor asigna una calificación a un alumno.
+     * PATCH /api/matriculas/{id}/calificacion?calificacion=18.5
      */
     @PatchMapping("/{id}/calificacion")
     @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMINISTRADOR')")
@@ -234,10 +241,10 @@ public class MatriculaController {
         }
     }
 
-    // --- ENDPOINTS DE ADMINISTRADOR ---
+    // ==================== ENDPOINTS DE ADMINISTRADOR ====================
 
     /**
-     * Listar todas las matrículas del sistema
+     * Listar todas las matrículas del sistema.
      * GET /api/matriculas
      */
     @GetMapping
@@ -257,7 +264,7 @@ public class MatriculaController {
     }
 
     /**
-     * Obtener una matrícula específica por ID
+     * Obtener una matrícula específica por ID.
      * GET /api/matriculas/{id}
      */
     @GetMapping("/{id}")
@@ -277,8 +284,9 @@ public class MatriculaController {
     }
 
     /**
-     * Actualizar el estado de una matrícula
-     * PATCH /api/matriculas/{id}/estado
+     * Actualizar el estado de una matrícula.
+     * Estados válidos: ACTIVA, RETIRADA, COMPLETADA, REPROBADA
+     * PATCH /api/matriculas/{id}/estado?estado=RETIRADA
      */
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
@@ -299,7 +307,8 @@ public class MatriculaController {
     }
 
     /**
-     * Eliminar una matrícula (ADMIN)
+     * Eliminar una matrícula (solo ADMIN).
+     * Esta es una operación destructiva que elimina el registro de BD.
      * DELETE /api/matriculas/{id}
      */
     @DeleteMapping("/{id}")

@@ -10,7 +10,7 @@ import com.proyecto.fundaciondeportiva.model.entity.Seccion;
 import com.proyecto.fundaciondeportiva.model.entity.Usuario;
 import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import com.proyecto.fundaciondeportiva.model.enums.Rol;
-import com.proyecto.fundaciondeportiva.repository.HorarioRepository; // ✅ IMPORTANTE
+import com.proyecto.fundaciondeportiva.repository.HorarioRepository;
 import com.proyecto.fundaciondeportiva.repository.MatriculaRepository;
 import com.proyecto.fundaciondeportiva.repository.SeccionRepository;
 import com.proyecto.fundaciondeportiva.repository.UsuarioRepository;
@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,7 +44,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private HorarioRepository horarioRepository; // ✅ INYECCIÓN PARA VALIDAR CRUCES
+    private HorarioRepository horarioRepository;
 
     // --- OPERACIONES DE ALUMNO ---
 
@@ -83,15 +84,14 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 throw new ValidacionException("Ya estás matriculado en esta sección");
             }
 
-            // --- 5. 🔒 VALIDACIÓN: NO REPETIR CURSO ---
-            // Verificamos si el alumno ya tiene una matrícula activa para ESTE CURSO (en cualquier sección)
+            // 5. 🔒 VALIDACIÓN: NO REPETIR CURSO
             Long cursoId = seccion.getCurso().getId();
             boolean yaTieneCurso = matriculaRepository.existeMatriculaActivaEnCurso(alumnoId, cursoId);
 
             if (yaTieneCurso) {
-                throw new ValidacionException("Ya estás matriculado en una sección del curso '" + seccion.getCurso().getTitulo() + "'. No puedes inscribirte dos veces en el mismo curso.");
+                throw new ValidacionException("Ya estás matriculado en una sección del curso '" +
+                        seccion.getCurso().getTitulo() + "'. No puedes inscribirte dos veces en el mismo curso.");
             }
-            // ----------------------------------------------
 
             // 6. Validar que haya cupo disponible
             long matriculasActivas = matriculaRepository.countMatriculasActivasBySeccionId(request.getSeccionId());
@@ -99,9 +99,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 throw new ValidacionException("La sección ha alcanzado su capacidad máxima.");
             }
 
-            // --- 7. VALIDACIÓN ESTRICTA DE NIVEL Y GRADO ---
-
-            // 7.1 Validar Nivel
+            // 7. VALIDACIÓN ESTRICTA DE NIVEL Y GRADO
             if (!alumno.getPerfilAlumno().getNivel().equals(seccion.getNivelSeccion())) {
                 throw new ValidacionException(
                         String.format("Nivel incorrecto. Tú eres de %s y la sección es de %s",
@@ -109,7 +107,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 );
             }
 
-            // 7.2 Validar Grado (Extrayendo solo el número para comparar)
+            // Validar Grado (Extrayendo solo el número para comparar)
             Integer gradoAlumno = extraerNumeroGrado(alumno.getPerfilAlumno().getGrado());
             Integer gradoSeccion = extraerNumeroGrado(seccion.getGradoSeccion());
 
@@ -121,40 +119,17 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                     );
                 }
             } else {
-                // Fallback: Comparación de texto estricta si falla la numérica
+                // Fallback: Comparación de texto si falla la numérica
                 if (!alumno.getPerfilAlumno().getGrado().equalsIgnoreCase(seccion.getGradoSeccion())) {
-                    logger.warn("Comparación de grados por texto estricto: {} vs {}",
-                            alumno.getPerfilAlumno().getGrado(), seccion.getGradoSeccion());
+                    throw new ValidacionException(
+                            String.format("Grado incorrecto. Tú estás en %s y la sección es para %s.",
+                                    alumno.getPerfilAlumno().getGrado(), seccion.getGradoSeccion())
+                    );
                 }
             }
 
-            // --- 8. 🔒 VALIDAR CRUCE DE HORARIOS (ALUMNO) ---
-            // Obtenemos los horarios de la nueva sección
-            List<Horario> horariosNuevos = seccion.getHorarios();
-
-            // Obtenemos todos los horarios que ya tiene ocupados el alumno
-            List<Horario> horariosOcupados = horarioRepository.findHorariosDeAlumno(alumnoId);
-
-            for (Horario nuevo : horariosNuevos) {
-                for (Horario ocupado : horariosOcupados) {
-                    // 1. ¿Es el mismo día?
-                    if (nuevo.getDiaSemana() == ocupado.getDiaSemana()) {
-                        // 2. ¿Se solapan las horas?
-                        // Lógica: (InicioNuevo < FinOcupado) Y (FinNuevo > InicioOcupado)
-                        boolean solapa = nuevo.getHoraInicio().isBefore(ocupado.getHoraFin()) &&
-                                nuevo.getHoraFin().isAfter(ocupado.getHoraInicio());
-
-                        if (solapa) {
-                            throw new ValidacionException(
-                                    String.format("Conflicto de horario: El %s de %s a %s choca con tu curso de '%s'",
-                                            nuevo.getDiaSemana(), nuevo.getHoraInicio(), nuevo.getHoraFin(),
-                                            ocupado.getSeccion().getCurso().getTitulo())
-                            );
-                        }
-                    }
-                }
-            }
-            // ---------------------------------------------------
+            // 8. 🔒 VALIDAR CRUCE DE HORARIOS (ALUMNO) - OPTIMIZADO
+            validarCruceHorariosAlumno(alumnoId, seccion);
 
             // 9. Crear la matrícula
             Matricula nuevaMatricula = Matricula.builder()
@@ -165,12 +140,15 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                     .build();
 
             Matricula matriculaGuardada = matriculaRepository.save(nuevaMatricula);
+            logger.info("Matrícula creada exitosamente. Matrícula ID: {}", matriculaGuardada.getId());
+
             return MatriculaResponseDTO.deEntidad(matriculaGuardada);
 
         } catch (RecursoNoEncontradoException | ValidacionException e) {
+            logger.warn("Validación fallida en matriculación: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            logger.error("Error al crear matrícula", e);
+            logger.error("Error inesperado al crear matrícula", e);
             throw new RuntimeException("Error al procesar la matrícula: " + e.getMessage(), e);
         }
     }
@@ -178,69 +156,102 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
     @Override
     @Transactional
     public MatriculaResponseDTO retirarseDeSeccion(Long alumnoId, Long seccionId) {
+        logger.info("Alumno ID {} solicita retirarse de sección ID {}", alumnoId, seccionId);
+
         Matricula matricula = matriculaRepository.findByAlumnoIdAndSeccionId(alumnoId, seccionId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró matrícula activa"));
 
-        if (matricula.getEstado() != EstadoMatricula.ACTIVA) throw new ValidacionException("Matrícula no activa");
-        if (matricula.getSeccion().getFechaFin().isBefore(LocalDate.now())) throw new ValidacionException("Curso finalizado");
+        if (matricula.getEstado() != EstadoMatricula.ACTIVA) {
+            throw new ValidacionException("La matrícula no está activa");
+        }
+
+        if (matricula.getSeccion().getFechaFin().isBefore(LocalDate.now())) {
+            throw new ValidacionException("El período de la sección ya finalizó. No puedes retirarte.");
+        }
 
         matricula.setEstado(EstadoMatricula.RETIRADA);
         matricula.setFechaRetiro(LocalDateTime.now());
+
+        logger.info("Matrícula marcada como retirada. Matrícula ID: {}", matricula.getId());
         return MatriculaResponseDTO.deEntidad(matriculaRepository.save(matricula));
     }
 
-    // --- MÉTODO: ELIMINAR MATRÍCULA (Baja Definitiva) ---
     @Override
     @Transactional
     public void eliminarMatriculaEstudiante(Long alumnoId, Long seccionId) {
         logger.info("Alumno ID {} solicita eliminar su matrícula de sección ID {}", alumnoId, seccionId);
 
-        // 1. Buscar la matrícula específica de ese alumno y esa sección
         Matricula matricula = matriculaRepository.findByAlumnoIdAndSeccionId(alumnoId, seccionId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No tienes una matrícula registrada en esta sección"));
 
-        // 2. Validaciones de negocio
+        // No permitir eliminar si ya tiene calificación
         if (matricula.getCalificacionFinal() != null) {
-            throw new ValidacionException("No puedes eliminar una matrícula que ya tiene calificación. Debes solicitar un retiro.");
+            throw new ValidacionException(
+                    "No puedes eliminar una matrícula que ya tiene calificación. Debes solicitar un retiro."
+            );
         }
 
-        // 3. Eliminar físicamente
+        // No permitir eliminar si el período ya finalizó
+        if (matricula.getSeccion().getFechaFin().isBefore(LocalDate.now())) {
+            throw new ValidacionException(
+                    "No puedes eliminar una matrícula de un período que ya finalizó. Solicita un retiro en su lugar."
+            );
+        }
+
         matriculaRepository.delete(matricula);
-        logger.info("Matrícula eliminada físicamente.");
+        logger.info("Matrícula eliminada físicamente. Alumno ID: {}, Sección ID: {}", alumnoId, seccionId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MatriculaResponseDTO> listarMisMatriculas(Long alumnoId) {
-        if (!usuarioRepository.existsById(alumnoId)) throw new RecursoNoEncontradoException("Alumno no encontrado");
-        return matriculaRepository.findByAlumnoId(alumnoId).stream().map(MatriculaResponseDTO::deEntidad).collect(Collectors.toList());
+        if (!usuarioRepository.existsById(alumnoId)) {
+            throw new RecursoNoEncontradoException("Alumno no encontrado");
+        }
+        return matriculaRepository.findByAlumnoId(alumnoId).stream()
+                .map(MatriculaResponseDTO::deEntidad)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MatriculaResponseDTO> listarMisMatriculasActivas(Long alumnoId) {
-        if (!usuarioRepository.existsById(alumnoId)) throw new RecursoNoEncontradoException("Alumno no encontrado");
-        return matriculaRepository.findByAlumnoIdAndEstado(alumnoId, EstadoMatricula.ACTIVA).stream().map(MatriculaResponseDTO::deEntidad).collect(Collectors.toList());
+        if (!usuarioRepository.existsById(alumnoId)) {
+            throw new RecursoNoEncontradoException("Alumno no encontrado");
+        }
+        return matriculaRepository.findByAlumnoIdAndEstado(alumnoId, EstadoMatricula.ACTIVA).stream()
+                .map(MatriculaResponseDTO::deEntidad)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MatriculaResponseDTO> listarAlumnosDeSeccion(Long seccionId) {
-        if (!seccionRepository.existsById(seccionId)) throw new RecursoNoEncontradoException("Sección no encontrada");
-        return matriculaRepository.findBySeccionId(seccionId).stream().map(MatriculaResponseDTO::deEntidad).collect(Collectors.toList());
+        if (!seccionRepository.existsById(seccionId)) {
+            throw new RecursoNoEncontradoException("Sección no encontrada");
+        }
+        return matriculaRepository.findBySeccionId(seccionId).stream()
+                .map(MatriculaResponseDTO::deEntidad)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MatriculaResponseDTO> listarAlumnosActivosDeSeccion(Long seccionId) {
-        if (!seccionRepository.existsById(seccionId)) throw new RecursoNoEncontradoException("Sección no encontrada");
-        return matriculaRepository.findBySeccionIdAndEstado(seccionId, EstadoMatricula.ACTIVA).stream().map(MatriculaResponseDTO::deEntidad).collect(Collectors.toList());
+        if (!seccionRepository.existsById(seccionId)) {
+            throw new RecursoNoEncontradoException("Sección no encontrada");
+        }
+        return matriculaRepository.findBySeccionIdAndEstado(seccionId, EstadoMatricula.ACTIVA).stream()
+                .map(MatriculaResponseDTO::deEntidad)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MatriculaResponseDTO> listarTodasLasMatriculas() {
-        return matriculaRepository.findAll().stream().map(MatriculaResponseDTO::deEntidad).collect(Collectors.toList());
+        return matriculaRepository.findAll().stream()
+                .map(MatriculaResponseDTO::deEntidad)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -253,11 +264,15 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
     @Override
     @Transactional
     public MatriculaResponseDTO actualizarEstadoMatricula(Long id, EstadoMatricula nuevoEstado) {
+        logger.info("Actualizando estado de matrícula ID {} a {}", id, nuevoEstado);
+
         Matricula matricula = matriculaRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Matrícula no encontrada"));
+
         if (nuevoEstado == EstadoMatricula.RETIRADA && matricula.getFechaRetiro() == null) {
             matricula.setFechaRetiro(LocalDateTime.now());
         }
+
         matricula.setEstado(nuevoEstado);
         return MatriculaResponseDTO.deEntidad(matriculaRepository.save(matricula));
     }
@@ -265,35 +280,104 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
     @Override
     @Transactional
     public MatriculaResponseDTO asignarCalificacion(Long id, Double calificacion) {
-        if (calificacion < 0 || calificacion > 20) throw new ValidacionException("Calificación inválida");
+        logger.info("Asignando calificación {} a matrícula ID {}", calificacion, id);
+
+        if (calificacion < 0 || calificacion > 20) {
+            throw new ValidacionException("Calificación inválida. Debe estar entre 0 y 20.");
+        }
+
         Matricula matricula = matriculaRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Matrícula no encontrada"));
+
         matricula.setCalificacionFinal(calificacion);
-        if (calificacion >= 11 && matricula.getSeccion().getFechaFin().isBefore(LocalDate.now())) {
-            matricula.setEstado(EstadoMatricula.COMPLETADA);
+
+        // Actualizar estado basado en calificación y período
+        if (matricula.getSeccion().getFechaFin().isBefore(LocalDate.now())) {
+            if (calificacion >= 10.5) {
+                matricula.setEstado(EstadoMatricula.COMPLETADA);
+                logger.info("Matrícula completada con éxito");
+            } else {
+                matricula.setEstado(EstadoMatricula.REPROBADA);
+                logger.info("Matrícula marcada como reprobada");
+            }
         }
+
         return MatriculaResponseDTO.deEntidad(matriculaRepository.save(matricula));
     }
 
     @Override
     @Transactional
     public void eliminarMatricula(Long id) {
-        if (!matriculaRepository.existsById(id)) throw new RecursoNoEncontradoException("Matrícula no encontrada");
+        logger.info("Eliminando matrícula ID {}", id);
+
+        if (!matriculaRepository.existsById(id)) {
+            throw new RecursoNoEncontradoException("Matrícula no encontrada");
+        }
+
         matriculaRepository.deleteById(id);
+        logger.info("Matrícula eliminada exitosamente");
     }
 
-    // --- MÉTODO AUXILIAR PARA EXTRAER EL NÚMERO DEL GRADO ---
+    // --- MÉTODOS PRIVADOS AUXILIARES ---
+
+    /**
+     * Valida si el alumno tiene cruces de horarios con la nueva sección.
+     * Se optimizó para usar queries directas en lugar de bucles en memoria.
+     */
+    private void validarCruceHorariosAlumno(Long alumnoId, Seccion seccion) {
+        List<Horario> horariosNuevos = seccion.getHorarios();
+
+        if (horariosNuevos == null || horariosNuevos.isEmpty()) {
+            logger.warn("La sección ID {} no tiene horarios asignados", seccion.getId());
+            return;
+        }
+
+        for (Horario horario : horariosNuevos) {
+            // Validar que el horario sea válido
+            if (!horario.esValido()) {
+                throw new ValidacionException(
+                        String.format("El horario del %s es inválido (inicio debe ser antes de fin)",
+                                horario.getDiaSemana())
+                );
+            }
+
+            // Usar query optimizada para detectar cruce
+            boolean hayCruce = horarioRepository.existeCruceAlumno(
+                    alumnoId,
+                    horario.getDiaSemana(),
+                    horario.getHoraInicio(),
+                    horario.getHoraFin()
+            );
+
+            if (hayCruce) {
+                throw new ValidacionException(
+                        String.format("Conflicto de horario: Ya tienes una clase asignada el %s entre %s y %s.",
+                                horario.getDiaSemana(), horario.getHoraInicio(), horario.getHoraFin())
+                );
+            }
+        }
+    }
+
+    /**
+     * Extrae el número del grado desde un string (ej: "6º grado" -> 6)
+     */
     private Integer extraerNumeroGrado(String textoGrado) {
-        if (textoGrado == null) return null;
+        if (textoGrado == null) {
+            return null;
+        }
+
         Pattern p = Pattern.compile("\\d+");
         Matcher m = p.matcher(textoGrado);
+
         if (m.find()) {
             try {
                 return Integer.parseInt(m.group());
             } catch (NumberFormatException e) {
+                logger.warn("No se pudo extraer número de grado: {}", textoGrado);
                 return null;
             }
         }
+
         return null;
     }
 }
