@@ -316,6 +316,9 @@ public class ServicioSeccionImpl implements ServicioSeccion {
 
     /**
      * Valida que las fechas de inicio y fin sean válidas.
+     *
+     * ✅ CORREGIDO: Ahora permite fechas de inicio desde HOY
+     * (Antes rechazaba fechas de hoy o en el pasado)
      */
     private void validarFechas(LocalDate fechaInicio, LocalDate fechaFin) {
         if (fechaInicio == null || fechaFin == null) {
@@ -326,9 +329,11 @@ public class ServicioSeccionImpl implements ServicioSeccion {
             throw new ValidacionException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
 
-        if (fechaInicio.isBefore(LocalDate.now())) {
-            logger.warn("Fecha de inicio en el pasado: {}", fechaInicio);
-            throw new ValidacionException("La fecha de inicio no puede ser en el pasado");
+        // ✅ CAMBIO IMPORTANTE: Permite fecha de inicio hoy o en el futuro
+        LocalDate hoy = LocalDate.now();
+        if (fechaInicio.isBefore(hoy)) {
+            logger.warn("Fecha de inicio anterior a hoy: {}", fechaInicio);
+            throw new ValidacionException("La fecha de inicio no puede ser anterior a hoy. Hoy es: " + hoy);
         }
     }
 
