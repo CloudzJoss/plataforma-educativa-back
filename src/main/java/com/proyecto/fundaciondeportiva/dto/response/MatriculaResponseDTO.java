@@ -1,9 +1,10 @@
 package com.proyecto.fundaciondeportiva.dto.response;
 
+import com.proyecto.fundaciondeportiva.dto.request.HorarioDTO; // Asegúrate de tener este DTO creado
 import com.proyecto.fundaciondeportiva.model.entity.Matricula;
 import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-import com.proyecto.fundaciondeportiva.model.enums.Turno;
+// import com.proyecto.fundaciondeportiva.model.enums.Turno; // ❌ Eliminado
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -37,7 +40,12 @@ public class MatriculaResponseDTO {
     private Long seccionId;
     private String codigoSeccion;
     private String nombreSeccion;
-    private Turno turnoSeccion;
+
+    // ❌ private Turno turnoSeccion; // Eliminado
+
+    // ✅ NUEVO: Lista de horarios para mostrar en el frontend
+    private List<HorarioDTO> horarios;
+
     private String aulaSeccion;
     private LocalDate fechaInicioSeccion;
     private LocalDate fechaFinSeccion;
@@ -57,6 +65,11 @@ public class MatriculaResponseDTO {
         if (matricula == null) {
             return null;
         }
+
+        // Convertir la lista de horarios de la sección a DTOs
+        List<HorarioDTO> listaHorarios = matricula.getSeccion().getHorarios().stream()
+                .map(h -> new HorarioDTO(h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin()))
+                .collect(Collectors.toList());
 
         return MatriculaResponseDTO.builder()
                 .id(matricula.getId())
@@ -80,7 +93,8 @@ public class MatriculaResponseDTO {
                 .seccionId(matricula.getSeccion().getId())
                 .codigoSeccion(matricula.getSeccion().getCodigo())
                 .nombreSeccion(matricula.getSeccion().getNombre())
-                .turnoSeccion(matricula.getSeccion().getTurno())
+                //.turnoSeccion(matricula.getSeccion().getTurno()) // ❌ Eliminado
+                .horarios(listaHorarios) // ✅ Agregado
                 .aulaSeccion(matricula.getSeccion().getAula())
                 .fechaInicioSeccion(matricula.getSeccion().getFechaInicio())
                 .fechaFinSeccion(matricula.getSeccion().getFechaFin())

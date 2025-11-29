@@ -2,9 +2,8 @@ package com.proyecto.fundaciondeportiva.controller;
 
 import com.proyecto.fundaciondeportiva.dto.request.SeccionRequestDTO;
 import com.proyecto.fundaciondeportiva.dto.response.SeccionResponseDTO;
-import com.proyecto.fundaciondeportiva.model.entity.Usuario;
+import com.proyecto.fundaciondeportiva.dto.response.UsuarioResponse; // ✅ Importar el DTO
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-import com.proyecto.fundaciondeportiva.model.enums.Turno;
 import com.proyecto.fundaciondeportiva.service.ServicioSeccion;
 import com.proyecto.fundaciondeportiva.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -40,23 +39,23 @@ public class SeccionController {
     @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<List<SeccionResponseDTO>> obtenerMisSecciones() {
         try {
-            // 1. Obtener el email del usuario autenticado desde el JWT
+            // 1. Obtener el email del usuario autenticado
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String emailProfesor = auth.getName();
 
-            // 2. 🚨 CORRECCIÓN: Usar método existente obtenerUsuarioPorEmail
-            Usuario usuario = servicioUsuario.obtenerUsuarioPorEmail(emailProfesor)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            // 2. Obtener datos del usuario como DTO
+            UsuarioResponse usuarioDTO = servicioUsuario.obtenerUsuarioResponsePorEmail(emailProfesor);
 
-            // 3. Validar que tenga perfil de profesor
-            if (usuario.getPerfilProfesor() == null || usuario.getPerfilProfesor().getDni() == null) {
+            // 3. Validar perfil profesor (Usando los campos planos del DTO)
+            // 🚨 CORRECCIÓN AQUÍ: Usamos getDniProfesor() directamente
+            if (usuarioDTO.getDniProfesor() == null) {
                 throw new RuntimeException("El usuario no tiene un perfil de profesor o DNI asociado");
             }
 
-            String dniProfesor = usuario.getPerfilProfesor().getDni();
+            String dniProfesor = usuarioDTO.getDniProfesor();
             logger.info("DNI del profesor identificado: {}", dniProfesor);
 
-            // 4. Buscar secciones por DNI del profesor
+            // 4. Buscar secciones
             List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesPorDniProfesor(dniProfesor);
 
             return ResponseEntity.ok(secciones);
@@ -133,12 +132,6 @@ public class SeccionController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesPorProfesor(@PathVariable Long profesorId) {
         return ResponseEntity.ok(servicioSeccion.listarSeccionesPorProfesor(profesorId));
-    }
-
-    @GetMapping("/turno/{turno}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesPorTurno(@PathVariable Turno turno) {
-        return ResponseEntity.ok(servicioSeccion.listarSeccionesPorTurno(turno));
     }
 
     @GetMapping("/nivel/{nivel}")
