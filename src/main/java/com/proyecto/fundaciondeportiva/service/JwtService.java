@@ -21,6 +21,10 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
+    // TIEMPO DE EXPIRACIÓN: 15 Minutos (en milisegundos)
+    // 1000 ms * 60 s * 15 m
+    public static final long EXPIRATION_TIME = 1000 * 60 * 1;
+
     public String generateToken(UserDetails userDetails) {
         return createToken(new HashMap<>(), userDetails.getUsername());
     }
@@ -28,9 +32,10 @@ public class JwtService {
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(subject) // Email del usuario
+                .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 horas
+                // Usamos la constante de 15 minutos
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
