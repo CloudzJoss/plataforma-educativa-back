@@ -1,10 +1,9 @@
 package com.proyecto.fundaciondeportiva.dto.response;
 
-import com.proyecto.fundaciondeportiva.dto.request.HorarioDTO; // Asegúrate de tener este DTO creado
+import com.proyecto.fundaciondeportiva.dto.request.HorarioDTO; // Asegúrate de tener este DTO
 import com.proyecto.fundaciondeportiva.model.entity.Matricula;
 import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-// import com.proyecto.fundaciondeportiva.model.enums.Turno; // ❌ Eliminado
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,9 +40,9 @@ public class MatriculaResponseDTO {
     private String codigoSeccion;
     private String nombreSeccion;
 
-    // ❌ private Turno turnoSeccion; // Eliminado
+    // ❌ ELIMINADO: private Turno turnoSeccion;
 
-    // ✅ NUEVO: Lista de horarios para mostrar en el frontend
+    // ✅ AGREGADO: Lista de horarios
     private List<HorarioDTO> horarios;
 
     private String aulaSeccion;
@@ -66,7 +65,7 @@ public class MatriculaResponseDTO {
             return null;
         }
 
-        // Convertir la lista de horarios de la sección a DTOs
+        // Convertir lista de horarios
         List<HorarioDTO> listaHorarios = matricula.getSeccion().getHorarios().stream()
                 .map(h -> new HorarioDTO(h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin()))
                 .collect(Collectors.toList());
@@ -93,8 +92,10 @@ public class MatriculaResponseDTO {
                 .seccionId(matricula.getSeccion().getId())
                 .codigoSeccion(matricula.getSeccion().getCodigo())
                 .nombreSeccion(matricula.getSeccion().getNombre())
-                //.turnoSeccion(matricula.getSeccion().getTurno()) // ❌ Eliminado
-                .horarios(listaHorarios) // ✅ Agregado
+
+                // .turnoSeccion(...) // ❌ ELIMINADO
+                .horarios(listaHorarios) // ✅ AGREGADO
+
                 .aulaSeccion(matricula.getSeccion().getAula())
                 .fechaInicioSeccion(matricula.getSeccion().getFechaInicio())
                 .fechaFinSeccion(matricula.getSeccion().getFechaFin())
