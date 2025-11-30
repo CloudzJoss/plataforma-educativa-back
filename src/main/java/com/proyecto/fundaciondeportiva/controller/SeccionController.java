@@ -31,6 +31,9 @@ public class SeccionController {
     private static final Logger logger = LoggerFactory.getLogger(SeccionController.class);
 
     @Autowired
+    private com.proyecto.fundaciondeportiva.repository.SesionRepository sesionRepository;
+
+    @Autowired
     private ServicioSeccion servicioSeccion;
 
     @Autowired
@@ -323,6 +326,32 @@ public class SeccionController {
 
         } catch (Exception e) {
             logger.error("Error en endpoint listarSeccionesConCupo", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Obtener todas las sesiones (clases) de una sección específica.
+     * GET /api/secciones/{id}/sesiones
+     */
+    @GetMapping("/{id}/sesiones")
+    @PreAuthorize("isAuthenticated()") // Permitir a profes y alumnos
+    public ResponseEntity<List<com.proyecto.fundaciondeportiva.dto.response.SesionDTO>> obtenerSesionesPorSeccion(@PathVariable Long id) {
+        try {
+            logger.info("Listando sesiones para la sección ID: {}", id);
+
+            // Buscamos las sesiones ordenadas por fecha
+            List<com.proyecto.fundaciondeportiva.model.entity.Sesion> sesiones = sesionRepository.findBySeccionIdOrderByFechaAsc(id);
+
+            // Convertimos a DTOs
+            List<com.proyecto.fundaciondeportiva.dto.response.SesionDTO> respuesta = sesiones.stream()
+                    .map(com.proyecto.fundaciondeportiva.dto.response.SesionDTO::deEntidad)
+                    .collect(java.util.stream.Collectors.toList());
+
+            return ResponseEntity.ok(respuesta);
+
+        } catch (Exception e) {
+            logger.error("Error al listar sesiones", e);
             throw e;
         }
     }
