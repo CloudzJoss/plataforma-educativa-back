@@ -1,19 +1,10 @@
 package com.proyecto.fundaciondeportiva.model.entity;
 
-import com.proyecto.fundaciondeportiva.model.enums.MomentoSesion;
-import com.proyecto.fundaciondeportiva.model.enums.TipoRecurso;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.proyecto.fundaciondeportiva.model.enums.MomentoClase;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.*;
 
-import java.time.LocalDateTime;
-
-/**
- * Entidad 'recursos'. (NUEVA)
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -26,31 +17,23 @@ public class Recurso {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 200, nullable = false)
-    private String titulo;
+    @Column(nullable = false)
+    private String titulo; // Ej: "Lectura Capítulo 1"
 
-    @Lob
-    private String descripcion;
+    @Column(nullable = false)
+    private String url; // URL del archivo o Link externo
 
-    @Enumerated(EnumType.STRING)
-    private MomentoSesion momento;
+    @Column(length = 50)
+    private String tipoArchivo; // PDF, VIDEO, LINK, IMAGEN
 
+    // Clasificación del recurso
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoRecurso tipo;
+    private MomentoClase momento; // ANTES, DURANTE, DESPUES
 
-    @Column(name = "archivo_url", length = 255)
-    private String archivoUrl;
-
-    @Column(name = "link_video", length = 255)
-    private String linkVideo;
-
-    @CreationTimestamp
-    @Column(name = "fecha_publicacion", nullable = false, updatable = false)
-    private LocalDateTime fechaPublicacion;
-
-    // --- Relaciones ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sesion_id", nullable = false)
+    @JsonBackReference
+    @ToString.Exclude
     private Sesion sesion;
 }

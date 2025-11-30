@@ -1,50 +1,65 @@
 package com.proyecto.fundaciondeportiva.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Entidad 'sesiones' (cada clase individual). (NUEVA)
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "sesiones")
+@Table(name = "sesiones", indexes = {
+        @Index(name = "idx_sesion_fecha", columnList = "fecha"),
+        @Index(name = "idx_sesion_seccion", columnList = "seccion_id")
+})
 public class Sesion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 200, nullable = false)
+    // Puede ser nulo al inicio, el profesor lo edita luego
+    @Column(length = 200)
     private String tema;
+
+    @Column(length = 500)
+    private String descripcion; // Campo útil para instrucciones adicionales
 
     @Column(nullable = false)
     private LocalDate fecha;
 
-    @Column(name = "hora_inicio")
+    @Column(name = "hora_inicio", nullable = false)
     private LocalTime horaInicio;
 
-    @Column(name = "hora_fin")
+    @Column(name = "hora_fin", nullable = false)
     private LocalTime horaFin;
 
     // --- Relaciones ---
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seccion_id", nullable = false)
+    @JsonIgnoreProperties({"sesiones", "matriculas", "horarios", "hibernateLazyInitializer"})
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Seccion seccion;
 
     @OneToMany(mappedBy = "sesion", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Asistencia> asistencias;
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Asistencia> asistencias = new HashSet<>();
 
+    //  Relación para los archivos (Antes, Durante, Después)
     @OneToMany(mappedBy = "sesion", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Recurso> recursos;
+    @JsonIgnoreProperties("sesion")
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Recurso> recursos = new HashSet<>();
 }

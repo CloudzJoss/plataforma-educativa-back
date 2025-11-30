@@ -5,17 +5,9 @@ import com.proyecto.fundaciondeportiva.dto.request.SeccionRequestDTO;
 import com.proyecto.fundaciondeportiva.dto.response.SeccionResponseDTO;
 import com.proyecto.fundaciondeportiva.exception.RecursoNoEncontradoException;
 import com.proyecto.fundaciondeportiva.exception.ValidacionException;
-import com.proyecto.fundaciondeportiva.model.entity.Curso;
-import com.proyecto.fundaciondeportiva.model.entity.Horario;
-import com.proyecto.fundaciondeportiva.model.entity.PerfilProfesor;
-import com.proyecto.fundaciondeportiva.model.entity.Seccion;
-import com.proyecto.fundaciondeportiva.model.entity.Usuario;
+import com.proyecto.fundaciondeportiva.model.entity.*;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
-import com.proyecto.fundaciondeportiva.repository.CursoRepository;
-import com.proyecto.fundaciondeportiva.repository.HorarioRepository;
-import com.proyecto.fundaciondeportiva.repository.PerfilProfesorRepository;
-import com.proyecto.fundaciondeportiva.repository.SeccionRepository;
-import com.proyecto.fundaciondeportiva.repository.UsuarioRepository;
+import com.proyecto.fundaciondeportiva.repository.*;
 import com.proyecto.fundaciondeportiva.service.ServicioSeccion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +38,10 @@ public class ServicioSeccionImpl implements ServicioSeccion {
 
     @Autowired
     private HorarioRepository horarioRepository;
+
+    // ✅ INYECCIÓN NECESARIA PARA LAS SESIONES
+    @Autowired
+    private SesionRepository sesionRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -79,24 +75,17 @@ public class ServicioSeccionImpl implements ServicioSeccion {
     public SeccionResponseDTO crearSeccion(SeccionRequestDTO request) {
         logger.info("Creando nueva sección: {}", request.getNombre());
 
-        // Validar fechas
         validarFechas(request.getFechaInicio(), request.getFechaFin());
 
-        // Validar que el curso existe
         Curso curso = cursoRepository.findById(request.getCursoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Curso no encontrado con id: " + request.getCursoId()));
 
-        // Validar coincidencia de nivel
         if (!request.getNivelSeccion().equals(curso.getNivelDestino())) {
-            throw new ValidacionException(
-                    "El nivel de la sección debe coincidir con el nivel del curso"
-            );
+            throw new ValidacionException("El nivel de la sección debe coincidir con el nivel del curso");
         }
 
-        // Buscar y validar profesor
         Usuario profesor = buscarProfesorPorDni(request.getProfesorDni());
 
-        // Validar horarios del profesor
         if (request.getHorarios() != null && !request.getHorarios().isEmpty()) {
             validarHorarios(request.getHorarios());
             validarCruceHorariosProfesor(profesor.getId(), request.getHorarios(), -1L);
@@ -104,10 +93,8 @@ public class ServicioSeccionImpl implements ServicioSeccion {
             throw new ValidacionException("La sección debe tener al menos un horario");
         }
 
-        // Generar código único
         String codigoGenerado = generarCodigoUnico();
 
-        // Crear la sección
         Seccion nuevaSeccion = Seccion.builder()
                 .codigo(codigoGenerado)
                 .nombre(request.getNombre())
@@ -122,7 +109,6 @@ public class ServicioSeccionImpl implements ServicioSeccion {
                 .profesor(profesor)
                 .build();
 
-        // Agregar horarios a la sección
         if (request.getHorarios() != null) {
             request.getHorarios().forEach(hDTO -> {
                 Horario h = Horario.builder()
@@ -135,8 +121,11 @@ public class ServicioSeccionImpl implements ServicioSeccion {
         }
 
         Seccion seccionGuardada = seccionRepository.save(nuevaSeccion);
-        logger.info("Sección creada exitosamente. Sección ID: {}, Código: {}", seccionGuardada.getId(), codigoGenerado);
 
+        // ✅ GENERACIÓN AUTOMÁTICA DE SESIONES
+        generarSesionesAutomaticas(seccionGuardada);
+
+        logger.info("Sección creada exitosamente. Sección ID: {}, Código: {}", seccionGuardada.getId(), codigoGenerado);
         return SeccionResponseDTO.deEntidad(seccionGuardada);
     }
 
@@ -148,23 +137,17 @@ public class ServicioSeccionImpl implements ServicioSeccion {
         Seccion seccion = seccionRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Sección no encontrada con id: " + id));
 
-        // Validar fechas
         validarFechas(request.getFechaInicio(), request.getFechaFin());
 
-        // Validar curso
         Curso curso = cursoRepository.findById(request.getCursoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Curso no encontrado con id: " + request.getCursoId()));
 
         if (!request.getNivelSeccion().equals(curso.getNivelDestino())) {
-            throw new ValidacionException(
-                    "El nivel de la sección debe coincidir con el nivel del curso"
-            );
+            throw new ValidacionException("El nivel de la sección debe coincidir con el nivel del curso");
         }
 
-        // Validar profesor
         Usuario profesor = buscarProfesorPorDni(request.getProfesorDni());
 
-        // Validar horarios del profesor (ignorando esta sección)
         if (request.getHorarios() != null && !request.getHorarios().isEmpty()) {
             validarHorarios(request.getHorarios());
             validarCruceHorariosProfesor(profesor.getId(), request.getHorarios(), id);
@@ -172,16 +155,17 @@ public class ServicioSeccionImpl implements ServicioSeccion {
             throw new ValidacionException("La sección debe tener al menos un horario");
         }
 
-        // Validar capacidad
         int estudiantesActuales = seccion.getNumeroEstudiantesMatriculados();
         if (request.getCapacidad() < estudiantesActuales) {
-            throw new ValidacionException(
-                    String.format("No puedes reducir la capacidad a %d cuando ya hay %d alumnos matriculados",
-                            request.getCapacidad(), estudiantesActuales)
-            );
+            throw new ValidacionException(String.format("No puedes reducir la capacidad a %d cuando ya hay %d alumnos matriculados", request.getCapacidad(), estudiantesActuales));
         }
 
-        // Actualizar campos de la sección
+        // Detectar si cambiaron fechas u horarios para saber si regenerar sesiones
+        boolean fechasCambiaron = !seccion.getFechaInicio().isEqual(request.getFechaInicio()) ||
+                !seccion.getFechaFin().isEqual(request.getFechaFin());
+        // Simplificación: asumimos que si se llama a update, los horarios podrían haber cambiado.
+        // Lo ideal sería comparar la lista, pero regenerar es más seguro.
+
         seccion.setNombre(request.getNombre());
         seccion.setNivelSeccion(request.getNivelSeccion());
         seccion.setGradoSeccion(request.getGradoSeccion());
@@ -192,7 +176,6 @@ public class ServicioSeccionImpl implements ServicioSeccion {
         seccion.setCurso(curso);
         seccion.setProfesor(profesor);
 
-        // Actualizar horarios (elimina los antiguos y agrega los nuevos)
         seccion.getHorarios().clear();
         if (request.getHorarios() != null) {
             request.getHorarios().forEach(hDTO -> {
@@ -206,8 +189,15 @@ public class ServicioSeccionImpl implements ServicioSeccion {
         }
 
         Seccion seccionActualizada = seccionRepository.save(seccion);
-        logger.info("Sección actualizada exitosamente. Sección ID: {}", id);
 
+        // ✅ REGENERACIÓN DE SESIONES (Si se edita la sección, recalculamos el calendario)
+        // 1. Borrar sesiones futuras/todas (depende de tu regla de negocio, aquí borramos todas para regenerar limpio)
+        sesionRepository.deleteBySeccionId(id);
+
+        // 2. Crear nuevas
+        generarSesionesAutomaticas(seccionActualizada);
+
+        logger.info("Sección actualizada y calendario regenerado. Sección ID: {}", id);
         return SeccionResponseDTO.deEntidad(seccionActualizada);
     }
 
@@ -215,197 +205,140 @@ public class ServicioSeccionImpl implements ServicioSeccion {
     @Transactional
     public void eliminarSeccion(Long id) {
         logger.info("Eliminando sección ID: {}", id);
-
         Seccion seccion = seccionRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Sección no encontrada"));
 
         if (seccion.getNumeroEstudiantesMatriculados() > 0) {
-            throw new ValidacionException(
-                    "No se puede eliminar una sección que tiene alumnos matriculados."
-            );
+            throw new ValidacionException("No se puede eliminar una sección que tiene alumnos matriculados.");
         }
-
         seccionRepository.deleteById(id);
-        logger.info("Sección eliminada exitosamente");
     }
 
     @Override
     @Transactional
     public void desactivarSeccion(Long id) {
-        logger.info("Desactivando sección ID: {}", id);
-
-        Seccion s = seccionRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Sección no encontrada"));
+        Seccion s = seccionRepository.findById(id).orElseThrow(() -> new RecursoNoEncontradoException("Sección no encontrada"));
         s.setActiva(false);
         seccionRepository.save(s);
-
-        logger.info("Sección desactivada exitosamente");
     }
 
     @Override
     @Transactional
     public void activarSeccion(Long id) {
-        logger.info("Activando sección ID: {}", id);
-
-        Seccion s = seccionRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Sección no encontrada"));
+        Seccion s = seccionRepository.findById(id).orElseThrow(() -> new RecursoNoEncontradoException("Sección no encontrada"));
         s.setActiva(true);
         seccionRepository.save(s);
-
-        logger.info("Sección activada exitosamente");
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SeccionResponseDTO> listarSeccionesPorCurso(Long cursoId) {
-        logger.info("Listando secciones para curso ID: {}", cursoId);
-
-        if (!cursoRepository.existsById(cursoId)) {
-            throw new RecursoNoEncontradoException("Curso no encontrado");
-        }
-
-        return seccionRepository.findByCursoId(cursoId).stream()
-                .map(SeccionResponseDTO::deEntidad)
-                .collect(Collectors.toList());
+        if (!cursoRepository.existsById(cursoId)) throw new RecursoNoEncontradoException("Curso no encontrado");
+        return seccionRepository.findByCursoId(cursoId).stream().map(SeccionResponseDTO::deEntidad).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SeccionResponseDTO> listarSeccionesPorProfesor(Long profesorId) {
-        logger.info("Listando secciones para profesor ID: {}", profesorId);
-
-        return seccionRepository.findByProfesorId(profesorId).stream()
-                .map(SeccionResponseDTO::deEntidad)
-                .collect(Collectors.toList());
+        return seccionRepository.findByProfesorId(profesorId).stream().map(SeccionResponseDTO::deEntidad).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SeccionResponseDTO> listarSeccionesPorDniProfesor(String dni) {
-        logger.info("Listando secciones para profesor con DNI: {}", dni);
-
         PerfilProfesor perfil = perfilProfesorRepository.findByDni(dni)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró profesor con DNI: " + dni));
-
-        return seccionRepository.findByProfesorId(perfil.getUsuario().getId()).stream()
-                .map(SeccionResponseDTO::deEntidad)
-                .collect(Collectors.toList());
+        return seccionRepository.findByProfesorId(perfil.getUsuario().getId()).stream().map(SeccionResponseDTO::deEntidad).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SeccionResponseDTO> listarSeccionesConCupo() {
-        logger.info("Listando secciones con cupo disponible");
-
-        return seccionRepository.findSeccionesConCupoDisponible().stream()
-                .map(SeccionResponseDTO::deEntidad)
-                .collect(Collectors.toList());
+        return seccionRepository.findSeccionesConCupoDisponible().stream().map(SeccionResponseDTO::deEntidad).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SeccionResponseDTO> listarSeccionesPorNivel(NivelAcademico nivel) {
-        logger.info("Listando secciones para nivel: {}", nivel);
-
-        return seccionRepository.findByNivelSeccionAndActivaTrue(nivel).stream()
-                .map(SeccionResponseDTO::deEntidad)
-                .collect(Collectors.toList());
+        return seccionRepository.findByNivelSeccionAndActivaTrue(nivel).stream().map(SeccionResponseDTO::deEntidad).collect(Collectors.toList());
     }
 
     // --- MÉTODOS PRIVADOS ---
 
     /**
-     * Valida que las fechas de inicio y fin sean válidas.
-     *
-     * ✅ CORREGIDO: Ahora permite fechas de inicio desde HOY
-     * (Antes rechazaba fechas de hoy o en el pasado)
+     * ✅ LÓGICA PRINCIPAL: Genera las sesiones en base a fechas y horarios
      */
+    private void generarSesionesAutomaticas(Seccion seccion) {
+        LocalDate inicio = seccion.getFechaInicio();
+        LocalDate fin = seccion.getFechaFin();
+        List<Horario> horariosConfigurados = seccion.getHorarios();
+
+        if (horariosConfigurados == null || horariosConfigurados.isEmpty()) {
+            return;
+        }
+
+        // Recorrer día por día el rango de fechas (Java 9+ datesUntil)
+        List<Sesion> sesionesAGenerar = inicio.datesUntil(fin.plusDays(1))
+                .filter(fecha -> {
+                    // Verificar si la fecha cae en un día de clase (Lunes, Martes...)
+                    return horariosConfigurados.stream()
+                            .anyMatch(h -> h.getDiaSemana() == fecha.getDayOfWeek());
+                })
+                .map(fecha -> {
+                    // Crear una sesión por cada bloque horario de ese día
+                    return horariosConfigurados.stream()
+                            .filter(h -> h.getDiaSemana() == fecha.getDayOfWeek())
+                            .map(horario -> Sesion.builder()
+                                    .fecha(fecha)
+                                    .horaInicio(horario.getHoraInicio())
+                                    .horaFin(horario.getHoraFin())
+                                    .tema(null) // Se deja vacío para que el profe lo llene luego
+                                    .seccion(seccion)
+                                    .build())
+                            .collect(Collectors.toList());
+                })
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+
+        if (!sesionesAGenerar.isEmpty()) {
+            sesionRepository.saveAll(sesionesAGenerar);
+            logger.info("✅ Se generaron {} sesiones automáticas para la sección {}", sesionesAGenerar.size(), seccion.getCodigo());
+        }
+    }
+
     private void validarFechas(LocalDate fechaInicio, LocalDate fechaFin) {
-        if (fechaInicio == null || fechaFin == null) {
-            throw new ValidacionException("Las fechas de inicio y fin son obligatorias");
-        }
+        if (fechaInicio == null || fechaFin == null) throw new ValidacionException("Las fechas son obligatorias");
+        if (fechaInicio.isAfter(fechaFin)) throw new ValidacionException("Inicio no puede ser después del fin");
 
-        if (fechaInicio.isAfter(fechaFin)) {
-            throw new ValidacionException("La fecha de inicio no puede ser posterior a la fecha de fin");
-        }
-
-        // ✅ CAMBIO IMPORTANTE: Permite fecha de inicio hoy o en el futuro
         LocalDate hoy = LocalDate.now();
         if (fechaInicio.isBefore(hoy)) {
-            logger.warn("Fecha de inicio anterior a hoy: {}", fechaInicio);
-            throw new ValidacionException("La fecha de inicio no puede ser anterior a hoy. Hoy es: " + hoy);
+            logger.warn("Fecha inicio anterior a hoy: {}", fechaInicio);
+            throw new ValidacionException("La fecha de inicio no puede ser anterior a hoy");
         }
     }
 
-    /**
-     * Busca un profesor por su DNI.
-     */
     private Usuario buscarProfesorPorDni(String dni) {
-        if (dni == null || dni.trim().isEmpty()) {
-            throw new ValidacionException("El DNI del profesor es obligatorio");
-        }
-
-        PerfilProfesor perfil = perfilProfesorRepository.findByDni(dni.trim())
-                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró profesor con DNI: " + dni));
-
-        return perfil.getUsuario();
+        if (dni == null || dni.trim().isEmpty()) throw new ValidacionException("DNI obligatorio");
+        return perfilProfesorRepository.findByDni(dni.trim())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Profesor no encontrado con DNI: " + dni)).getUsuario();
     }
 
-    /**
-     * Genera un código único para la sección.
-     */
     private String generarCodigoUnico() {
         return "SEC-" + System.currentTimeMillis();
     }
 
-    /**
-     * Valida que los horarios sean estructuralmente correctos.
-     */
     private void validarHorarios(List<HorarioDTO> horarios) {
         for (HorarioDTO h : horarios) {
-            if (!h.isHoraValida()) {
-                throw new ValidacionException(
-                        String.format("El horario del %s es inválido: la hora de inicio debe ser anterior a la de fin",
-                                h.getDiaSemana())
-                );
-            }
+            if (!h.isHoraValida()) throw new ValidacionException("Horario inválido: inicio > fin en " + h.getDiaSemana());
         }
     }
 
-    /**
-     * Valida que los nuevos horarios del profesor no choquen con sus secciones existentes.
-     *
-     * @param profesorId ID del profesor
-     * @param horariosNuevos Lista de nuevos horarios
-     * @param seccionIdIgnorar ID de sección a ignorar (para updates, -1L para creates)
-     */
     private void validarCruceHorariosProfesor(Long profesorId, List<HorarioDTO> horariosNuevos, Long seccionIdIgnorar) {
         long idIgnorar = (seccionIdIgnorar == null) ? -1L : seccionIdIgnorar;
-
         for (HorarioDTO h : horariosNuevos) {
-            // Validar estructura del horario
-            if (!h.isHoraValida()) {
-                throw new ValidacionException(
-                        String.format("El horario del %s tiene hora de inicio posterior a la de fin",
-                                h.getDiaSemana())
-                );
-            }
-
-            // Consultar BD para detectar cruces
-            boolean hayCruce = horarioRepository.existeCruceProfesor(
-                    profesorId,
-                    h.getDiaSemana(),
-                    h.getHoraInicio(),
-                    h.getHoraFin(),
-                    idIgnorar
-            );
-
-            if (hayCruce) {
-                throw new ValidacionException(
-                        String.format("El profesor ya tiene una clase asignada el %s entre %s y %s en otra sección",
-                                h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin())
-                );
-            }
+            if (!h.isHoraValida()) throw new ValidacionException("Horario inválido");
+            boolean hayCruce = horarioRepository.existeCruceProfesor(profesorId, h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin(), idIgnorar);
+            if (hayCruce) throw new ValidacionException("El profesor ya tiene clase el " + h.getDiaSemana() + " en ese horario");
         }
     }
 }
