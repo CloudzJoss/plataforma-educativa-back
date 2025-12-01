@@ -18,7 +18,7 @@ public class WebConfig {
                                 "http://localhost:3000", // React por defecto
                                 "http://127.0.0.1:5500"  // Live Server de VS Code (HTML simple)
                         )
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Métodos HTTP permitidos
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS") // Métodos HTTP permitidos
                         .allowedHeaders("*") // Cabeceras permitidas (como Authorization)
                         .allowCredentials(true); // Permite enviar cookies/credenciales (útil si usas sesiones, aunque JWT no las necesita tanto)
             }
