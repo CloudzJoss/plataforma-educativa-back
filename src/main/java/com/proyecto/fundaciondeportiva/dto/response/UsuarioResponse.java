@@ -12,69 +12,58 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO para mostrar la información completa de un usuario.
- * REEMPLAZA a 'UsuarioOutputDTO' antiguo.
- * Este DTO "aplana" la información de Usuario y su Perfil asociado.
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UsuarioResponse {
 
-    // Campos de Usuario
     private Long id;
-    private String nombre;
+    private String nombres;   //  CAMBIO
+    private String apellidos; //  CAMBIO
     private String email;
     private Rol rol;
     private LocalDateTime fechaCreacion;
 
-    // Campos de PerfilAlumno
+    // Perfil Alumno
     private String codigoEstudiante;
     private String dniAlumno;
     private NivelAcademico nivel;
     private String grado;
 
-    // Campos de PerfilProfesor
+    // Perfil Profesor
     private String dniProfesor;
     private String telefono;
     private String experiencia;
     private String gradoAcademico;
 
-    /**
-     * Método de fábrica (static factory method) para convertir fácilmente
-     * una Entidad Usuario (de la BD) en este DTO (para el Frontend).
-     */
     public static UsuarioResponse deEntidad(Usuario usuario) {
-        if (usuario == null) {
-            return null;
-        }
+        if (usuario == null) return null;
 
         UsuarioResponse dto = UsuarioResponse.builder()
                 .id(usuario.getId())
-                .nombre(usuario.getNombre())
+                .nombres(usuario.getNombres())     //  CAMBIO
+                .apellidos(usuario.getApellidos()) // CAMBIO
                 .email(usuario.getEmail())
                 .rol(usuario.getRol())
                 .fechaCreacion(usuario.getFechaCreacion())
                 .build();
 
         if (usuario.getPerfilAlumno() != null) {
-            PerfilAlumno perfil = usuario.getPerfilAlumno();
-            dto.setCodigoEstudiante(perfil.getCodigoEstudiante());
-            dto.setDniAlumno(perfil.getDni());
-            dto.setNivel(perfil.getNivel());
-            dto.setGrado(perfil.getGrado());
+            PerfilAlumno p = usuario.getPerfilAlumno();
+            dto.setCodigoEstudiante(p.getCodigoEstudiante());
+            dto.setDniAlumno(p.getDni());
+            dto.setNivel(p.getNivel());
+            dto.setGrado(p.getGrado());
         }
 
         if (usuario.getPerfilProfesor() != null) {
-            PerfilProfesor perfil = usuario.getPerfilProfesor();
-            dto.setDniProfesor(perfil.getDni());
-            dto.setTelefono(perfil.getTelefono());
-            dto.setExperiencia(perfil.getExperiencia());
-            dto.setGradoAcademico(perfil.getGradoAcademico());
+            PerfilProfesor p = usuario.getPerfilProfesor();
+            dto.setDniProfesor(p.getDni());
+            dto.setTelefono(p.getTelefono());
+            dto.setExperiencia(p.getExperiencia());
+            dto.setGradoAcademico(p.getGradoAcademico());
         }
-
         return dto;
     }
 }

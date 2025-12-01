@@ -1,6 +1,6 @@
 package com.proyecto.fundaciondeportiva.dto.response;
 
-import com.proyecto.fundaciondeportiva.dto.request.HorarioDTO; // Asegúrate de tener este DTO
+import com.proyecto.fundaciondeportiva.dto.request.HorarioDTO;
 import com.proyecto.fundaciondeportiva.model.entity.Matricula;
 import com.proyecto.fundaciondeportiva.model.enums.EstadoMatricula;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
@@ -29,7 +29,7 @@ public class MatriculaResponseDTO {
 
     // Información del Alumno
     private Long alumnoId;
-    private String nombreAlumno;
+    private String nombreAlumno; // Mantenemos el campo concatenado
     private String dniAlumno;
     private String codigoEstudiante;
     private NivelAcademico nivelAlumno;
@@ -40,9 +40,6 @@ public class MatriculaResponseDTO {
     private String codigoSeccion;
     private String nombreSeccion;
 
-    // ❌ ELIMINADO: private Turno turnoSeccion;
-
-    // ✅ AGREGADO: Lista de horarios
     private List<HorarioDTO> horarios;
 
     private String aulaSeccion;
@@ -57,7 +54,7 @@ public class MatriculaResponseDTO {
 
     // Información del Profesor
     private Long profesorId;
-    private String nombreProfesor;
+    private String nombreProfesor; // Mantenemos el campo concatenado
     private String dniProfesor;
 
     public static MatriculaResponseDTO deEntidad(Matricula matricula) {
@@ -65,10 +62,13 @@ public class MatriculaResponseDTO {
             return null;
         }
 
-        // Convertir lista de horarios
         List<HorarioDTO> listaHorarios = matricula.getSeccion().getHorarios().stream()
                 .map(h -> new HorarioDTO(h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin()))
                 .collect(Collectors.toList());
+
+        //  CORRECCIÓN: Concatenación de nombres
+        String nombreCompletoAlumno = matricula.getAlumno().getNombres() + " " + matricula.getAlumno().getApellidos();
+        String nombreCompletoProfesor = matricula.getSeccion().getProfesor().getNombres() + " " + matricula.getSeccion().getProfesor().getApellidos();
 
         return MatriculaResponseDTO.builder()
                 .id(matricula.getId())
@@ -79,7 +79,7 @@ public class MatriculaResponseDTO {
                 .observaciones(matricula.getObservaciones())
                 // Alumno
                 .alumnoId(matricula.getAlumno().getId())
-                .nombreAlumno(matricula.getAlumno().getNombre())
+                .nombreAlumno(nombreCompletoAlumno) // ✅ Usamos la variable concatenada
                 .dniAlumno(matricula.getAlumno().getPerfilAlumno() != null ?
                         matricula.getAlumno().getPerfilAlumno().getDni() : null)
                 .codigoEstudiante(matricula.getAlumno().getPerfilAlumno() != null ?
@@ -92,10 +92,7 @@ public class MatriculaResponseDTO {
                 .seccionId(matricula.getSeccion().getId())
                 .codigoSeccion(matricula.getSeccion().getCodigo())
                 .nombreSeccion(matricula.getSeccion().getNombre())
-
-                // .turnoSeccion(...) // ❌ ELIMINADO
-                .horarios(listaHorarios) // ✅ AGREGADO
-
+                .horarios(listaHorarios)
                 .aulaSeccion(matricula.getSeccion().getAula())
                 .fechaInicioSeccion(matricula.getSeccion().getFechaInicio())
                 .fechaFinSeccion(matricula.getSeccion().getFechaFin())
@@ -106,7 +103,7 @@ public class MatriculaResponseDTO {
                 .nivelCurso(matricula.getSeccion().getCurso().getNivelDestino())
                 // Profesor
                 .profesorId(matricula.getSeccion().getProfesor().getId())
-                .nombreProfesor(matricula.getSeccion().getProfesor().getNombre())
+                .nombreProfesor(nombreCompletoProfesor) // ✅ Usamos la variable concatenada
                 .dniProfesor(matricula.getSeccion().getProfesor().getPerfilProfesor() != null ?
                         matricula.getSeccion().getProfesor().getPerfilProfesor().getDni() : null)
                 .build();

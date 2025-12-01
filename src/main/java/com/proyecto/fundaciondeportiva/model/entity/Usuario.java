@@ -26,21 +26,25 @@ import java.util.Set;
 @Table(name = "usuarios", uniqueConstraints = {
         @UniqueConstraint(columnNames = "email")
 })
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // 👈 AÑADIDO
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // CAMBIO: Se dividió 'nombre' en 'nombres' y 'apellidos'
     @Column(length = 100, nullable = false)
-    private String nombre;
+    private String nombres;
+
+    @Column(length = 100, nullable = false)
+    private String apellidos;
 
     @Column(length = 100, nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
-    @JsonIgnore // 👈 AÑADIDO - NUNCA serializar el password
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -60,63 +64,68 @@ public class Usuario implements UserDetails {
     @JoinColumn(name = "perfil_profesor_id", referencedColumnName = "id")
     private PerfilProfesor perfilProfesor;
 
-    // --- Relaciones (ignoradas en JSON para evitar recursión) ---
+    // --- Relaciones (ignoradas en JSON) ---
     @OneToMany(mappedBy = "creadoPor")
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     private Set<Curso> cursosCreados;
 
     @OneToMany(mappedBy = "profesor")
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     private Set<Seccion> seccionesAsignadas;
 
     @OneToMany(mappedBy = "alumno")
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     private Set<Matricula> matriculas;
 
     @OneToMany(mappedBy = "alumno")
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     private Set<Asistencia> asistencias;
 
     // --- Métodos de Spring Security ---
     @Override
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
     }
 
     @Override
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     public String getPassword() {
         return this.password;
     }
 
     @Override
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     public String getUsername() {
         return this.email;
     }
 
     @Override
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     public boolean isAccountNonLocked() {
         return true;
     }
 
     @Override
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     public boolean isEnabled() {
         return true;
+    }
+
+    // Método utilitario para obtener nombre completo si lo necesitas
+    public String getNombreCompleto() {
+        return this.nombres + " " + this.apellidos;
     }
 }

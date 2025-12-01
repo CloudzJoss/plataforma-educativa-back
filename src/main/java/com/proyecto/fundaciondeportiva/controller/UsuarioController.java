@@ -26,7 +26,7 @@ public class UsuarioController {
     private UsuarioService usuarioService;
 
     @PostMapping(value = "/crear", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMINISTRADOR')") // ✅ Coincide con el Enum
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioOutputDTO> crearUsuario(@Valid @RequestBody UsuarioInputDTO inputDTO) {
         Usuario nuevoUsuario = usuarioService.crearUsuario(inputDTO);
         return new ResponseEntity<>(UsuarioOutputDTO.deEntidad(nuevoUsuario), HttpStatus.CREATED);
@@ -42,7 +42,7 @@ public class UsuarioController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMINISTRADOR')") // ✅ Coincide con el Enum
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<UsuarioOutputDTO>> listarTodosLosUsuarios() {
         List<Usuario> usuarios = usuarioService.listarTodosLosUsuarios();
         List<UsuarioOutputDTO> dtos = usuarios.stream().map(UsuarioOutputDTO::deEntidad).collect(Collectors.toList());
@@ -50,21 +50,21 @@ public class UsuarioController {
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMINISTRADOR')") // ✅ Coincide con el Enum
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioOutputDTO> obtenerUsuarioPorId(@PathVariable Long id) {
         Usuario usuario = usuarioService.obtenerUsuarioPorId(id);
         return ResponseEntity.ok(UsuarioOutputDTO.deEntidad(usuario));
     }
 
     @PutMapping(value = "/editar/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMINISTRADOR')") // ✅ Coincide con el Enum
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioOutputDTO> editarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioUpdateDTO updateDTO) {
         Usuario usuarioActualizado = usuarioService.actualizarUsuario(id, updateDTO);
         return ResponseEntity.ok(UsuarioOutputDTO.deEntidad(usuarioActualizado));
     }
 
     @DeleteMapping("/eliminar/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')") // ✅ Coincide con el Enum
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long id) {
         usuarioService.eliminarUsuario(id);
         return ResponseEntity.noContent().build();

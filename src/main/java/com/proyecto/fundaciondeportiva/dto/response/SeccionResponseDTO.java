@@ -24,7 +24,6 @@ public class SeccionResponseDTO {
     private String nombre;
     private NivelAcademico nivelSeccion;
     private String gradoSeccion;
-    // ❌ ELIMINADO: private Turno turno;
     private String aula;
     private Integer capacidad;
     private LocalDate fechaInicio;
@@ -32,7 +31,6 @@ public class SeccionResponseDTO {
     private Boolean activa;
     private LocalDateTime fechaCreacion;
 
-    // ✅ AGREGADO: Lista de horarios para mostrar en el frontend
     private List<HorarioDTO> horarios;
 
     // Información del curso
@@ -43,7 +41,7 @@ public class SeccionResponseDTO {
 
     // Información del profesor
     private Long profesorId;
-    private String nombreProfesor;
+    private String nombreProfesor; // Se mantiene el campo para el front
     private String dniProfesor;
 
     // Estadísticas
@@ -58,10 +56,12 @@ public class SeccionResponseDTO {
         int estudiantesMatriculados = seccion.getNumeroEstudiantesMatriculados();
         int cuposDisponibles = seccion.getCapacidad() - estudiantesMatriculados;
 
-        // Convertir la lista de entidades Horario a DTOs
         List<HorarioDTO> horariosDTO = seccion.getHorarios().stream()
                 .map(h -> new HorarioDTO(h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin()))
                 .collect(Collectors.toList());
+
+        //  CORRECCIÓN: Concatenamos nombres y apellidos del profesor
+        String nombreCompletoProfesor = seccion.getProfesor().getNombres() + " " + seccion.getProfesor().getApellidos();
 
         return SeccionResponseDTO.builder()
                 .id(seccion.getId())
@@ -69,8 +69,7 @@ public class SeccionResponseDTO {
                 .nombre(seccion.getNombre())
                 .nivelSeccion(seccion.getNivelSeccion())
                 .gradoSeccion(seccion.getGradoSeccion())
-                // .turno(seccion.getTurno()) // ❌ Eliminado
-                .horarios(horariosDTO) // ✅ Agregado
+                .horarios(horariosDTO)
                 .aula(seccion.getAula())
                 .capacidad(seccion.getCapacidad())
                 .fechaInicio(seccion.getFechaInicio())
@@ -84,7 +83,7 @@ public class SeccionResponseDTO {
                 .nivelCurso(seccion.getCurso().getNivelDestino())
                 // Profesor
                 .profesorId(seccion.getProfesor().getId())
-                .nombreProfesor(seccion.getProfesor().getNombre())
+                .nombreProfesor(nombreCompletoProfesor) // ✅ Usamos la variable concatenada
                 .dniProfesor(seccion.getProfesor().getPerfilProfesor() != null ?
                         seccion.getProfesor().getPerfilProfesor().getDni() : "N/A")
                 // Estadísticas

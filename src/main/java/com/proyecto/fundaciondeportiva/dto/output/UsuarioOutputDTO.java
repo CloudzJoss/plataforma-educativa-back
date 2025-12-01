@@ -19,18 +19,19 @@ import java.time.LocalDateTime;
 public class UsuarioOutputDTO {
 
     private Long id;
-    private String nombre;
+    private String nombres;   //  CAMBIO
+    private String apellidos; //  CAMBIO
     private String email;
     private Rol rol;
     private LocalDateTime fechaCreacion;
 
-    // Campos de PerfilAlumno
+    // Perfil Alumno
     private String codigoEstudiante;
     private String dniAlumno;
     private NivelAcademico nivel;
     private String grado;
 
-    // Campos de PerfilProfesor
+    // Perfil Profesor
     private String dniProfesor;
     private String telefono;
     private String experiencia;
@@ -41,7 +42,8 @@ public class UsuarioOutputDTO {
 
         UsuarioOutputDTO dto = UsuarioOutputDTO.builder()
                 .id(usuario.getId())
-                .nombre(usuario.getNombre())
+                .nombres(usuario.getNombres())     //  CAMBIO
+                .apellidos(usuario.getApellidos()) //  CAMBIO
                 .email(usuario.getEmail())
                 .rol(usuario.getRol())
                 .fechaCreacion(usuario.getFechaCreacion())

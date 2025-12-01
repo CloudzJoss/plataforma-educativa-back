@@ -11,21 +11,20 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO para registrar un nuevo Usuario (Admin, Profesor o Alumno).
- * REEMPLAZA el contenido de tu 'UsuarioInputDTO' antiguo.
- * Ahora contiene todos los campos del diagrama PlantUML.
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UsuarioInputDTO {
 
-    // --- Campos de Usuario ---
-    @NotBlank(message = "El nombre es obligatorio")
-    @Size(min = 3, max = 100)
-    private String nombre;
+    // CAMBIO: Separación de campos
+    @NotBlank(message = "Los nombres son obligatorios")
+    @Size(min = 2, max = 100)
+    private String nombres;
+
+    @NotBlank(message = "Los apellidos son obligatorios")
+    @Size(min = 2, max = 100)
+    private String apellidos;
 
     @NotBlank(message = "El email es obligatorio")
     @Email(message = "El formato del email no es válido")
@@ -38,21 +37,17 @@ public class UsuarioInputDTO {
     @NotNull(message = "El rol es obligatorio")
     private Rol rol;
 
-    // --- Campos de PerfilProfesor (Opcionales, solo para Rol.PROFESOR) ---
+    // --- Campos de PerfilProfesor ---
     @Size(min = 8, max = 15, message = "DNI de Profesor debe tener entre 8 y 15 caracteres")
     private String dniProfesor;
-
     private String telefono;
     private String experiencia;
     private String gradoAcademico;
 
-    // --- Campos de PerfilAlumno (Opcionales, solo para Rol.ALUMNO) ---
+    // --- Campos de PerfilAlumno ---
     @Size(min = 8, max = 15, message = "DNI de Alumno debe tener entre 8 y 15 caracteres")
     private String dniAlumno;
-
-    private String codigoEstudiante; // Opcional, se puede autogenerar
-
-    // Estos son requeridos si el rol es ALUMNO
+    private String codigoEstudiante;
     private NivelAcademico nivel;
     private String grado;
 }
