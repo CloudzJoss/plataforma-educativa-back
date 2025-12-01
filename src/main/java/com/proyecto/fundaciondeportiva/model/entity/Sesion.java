@@ -28,8 +28,9 @@ public class Sesion {
     @Column(length = 200)
     private String tema;
 
+    // CAMBIO REALIZADO: descripcion -> resultado
     @Column(length = 500)
-    private String descripcion; // Campo útil para instrucciones adicionales
+    private String resultado;
 
     @Column(nullable = false)
     private LocalDate fecha;
@@ -55,7 +56,6 @@ public class Sesion {
     @EqualsAndHashCode.Exclude
     private Set<Asistencia> asistencias = new HashSet<>();
 
-    //  Relación para los archivos (Antes, Durante, Después)
     @OneToMany(mappedBy = "sesion", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("sesion")
     @Builder.Default
