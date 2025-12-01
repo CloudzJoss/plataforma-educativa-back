@@ -20,6 +20,10 @@ public class Recurso {
     @Column(nullable = false)
     private String titulo; // Ej: "Lectura Capítulo 1"
 
+    // ✅ NUEVO CAMPO: Descripción opcional
+    @Column(length = 500)
+    private String descripcion;
+
     @Column(nullable = false)
     private String url; // URL del archivo o Link externo
 
