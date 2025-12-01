@@ -52,12 +52,16 @@ public class AuthController {
         jwtCookie.setPath("/");
 
         // 🕒 CAMBIO: La cookie expira en 15 minutos (900 segundos)
-        jwtCookie.setMaxAge(60);
+        // Nota: 60 segundos es muy poco para producción, quizás quieras 900
+        jwtCookie.setMaxAge(900);
 
         response.addCookie(jwtCookie);
 
+        // ✅ CORRECCIÓN AQUÍ: Concatenamos nombres y apellidos
+        String nombreCompleto = usuario.getNombres() + " " + usuario.getApellidos();
+
         LoginOutputDTO responseBody = LoginOutputDTO.builder()
-                .nombre(usuario.getNombre())
+                .nombre(nombreCompleto) // Se envía el nombre completo al frontend
                 .rol(usuario.getRol())
                 .build();
 

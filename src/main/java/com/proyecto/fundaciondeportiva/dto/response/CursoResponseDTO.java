@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 
 /**
  * DTO para devolver información de un Curso.
- * (Corregido SIN gradoDestino)
  */
 @Data
 @Builder
@@ -33,7 +32,12 @@ public class CursoResponseDTO {
             return null;
         }
 
-        String nombreCreador = (curso.getCreadoPor() != null) ? curso.getCreadoPor().getNombre() : "Sistema";
+        // ✅ CORREGIDO: Concatenación de nombres y apellidos
+        String nombreCreador = "Sistema";
+        if (curso.getCreadoPor() != null) {
+            nombreCreador = curso.getCreadoPor().getNombres() + " " + curso.getCreadoPor().getApellidos();
+        }
+
         Long idCreador = (curso.getCreadoPor() != null) ? curso.getCreadoPor().getId() : null;
 
         return CursoResponseDTO.builder()

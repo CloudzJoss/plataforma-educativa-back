@@ -79,7 +79,9 @@ public class ServicioCursoImpl implements ServicioCurso {
                         return new RecursoNoEncontradoException("Usuario administrador no encontrado: " + emailAdmin);
                     });
 
-            logger.info("Usuario administrador encontrado: {} (ID: {})", admin.getNombre(), admin.getId());
+            // ✅ CORREGIDO: Uso de getNombres() y getApellidos() en el log
+            logger.info("Usuario administrador encontrado: {} {} (ID: {})",
+                    admin.getNombres(), admin.getApellidos(), admin.getId());
 
             // Generar código único automáticamente
             String codigoGenerado = generarCodigoUnico(request.getNivelDestino());

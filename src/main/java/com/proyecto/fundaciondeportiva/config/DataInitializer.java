@@ -25,10 +25,13 @@ public class DataInitializer implements CommandLineRunner {
 
             // Creamos el usuario administrador
             Usuario admin = new Usuario();
-            admin.setNombre("Admin Principal");
+            // ✅ CORREGIDO: Usamos nombres y apellidos separados
+            admin.setNombres("Admin");
+            admin.setApellidos("Principal");
+
             admin.setEmail("admin@fundacion.com");
             // ¡Importante! Ciframos la contraseña antes de guardarla.
-                    admin.setPassword(passwordEncoder.encode("adminfundacion_2025"));
+            admin.setPassword(passwordEncoder.encode("adminfundacion_2025"));
             admin.setRol(Rol.ADMINISTRADOR);
 
             // Guardamos el usuario en la base de datos
