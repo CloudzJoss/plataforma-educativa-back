@@ -1,12 +1,9 @@
 package com.proyecto.fundaciondeportiva.model.enums;
 
-/**
- * Define los estados posibles de una asistencia.
- * Basado en: ENUM('ASISTIO','TARDANZA','FALTA','JUSTIFICADA')
- */
 public enum EstadoAsistencia {
-    ASISTIO,
-    TARDANZA,
-    FALTA,
-    JUSTIFICADA
+    PRESENTE,
+    TARDE,
+    FALTA_JUSTIFICADA,
+    FALTA_INJUSTIFICADA,
+    SIN_REGISTRAR // Para cuando la clase no ha ocurrido o no se ha tomado lista aún
 }
