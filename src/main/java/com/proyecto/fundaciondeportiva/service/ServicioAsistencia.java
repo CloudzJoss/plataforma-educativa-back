@@ -6,4 +6,5 @@ import java.util.List;
 public interface ServicioAsistencia {
     List<AsistenciaDTO> obtenerAsistenciaDeSesion(Long sesionId);
     void registrarAsistenciaMasiva(RegistroAsistenciaDTO request);
+    AsistenciaDTO obtenerMiAsistencia(Long sesionId, String emailAlumno);
 }

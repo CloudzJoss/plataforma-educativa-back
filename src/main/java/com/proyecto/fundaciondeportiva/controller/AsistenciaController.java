@@ -34,4 +34,11 @@ public class AsistenciaController {
         servicioAsistencia.registrarAsistenciaMasiva(request);
         return ResponseEntity.ok().build();
     }
+    @GetMapping("/mi-asistencia/sesion/{sesionId}")
+    @PreAuthorize("hasRole('ALUMNO')")
+    public ResponseEntity<AsistenciaDTO> obtenerMiAsistencia(@PathVariable Long sesionId) {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        AsistenciaDTO dto = servicioAsistencia.obtenerMiAsistencia(sesionId, email);
+        return ResponseEntity.ok(dto);
+    }
 }
