@@ -40,7 +40,7 @@ public class ServicioAsistenciaImpl implements ServicioAsistencia {
         // 1. Obtener los alumnos matriculados
         List<Matricula> matriculas = matriculaRepository.findBySeccionIdAndEstado(sesion.getSeccion().getId(), EstadoMatricula.ACTIVA);
 
-        // ✅ NUEVO: Ordenar la lista de matrículas por Apellido alfabéticamente
+        //  NUEVO: Ordenar la lista de matrículas por Apellido alfabéticamente
         matriculas.sort(Comparator.comparing(m -> m.getAlumno().getApellidos(), String.CASE_INSENSITIVE_ORDER));
 
         // 2. Obtener registros ya guardados
@@ -56,7 +56,7 @@ public class ServicioAsistenciaImpl implements ServicioAsistencia {
             Usuario alumno = matricula.getAlumno();
             Asistencia asistenciaExistente = mapaAsistencias.get(alumno.getId());
 
-            // ✅ Formato: "Apellidos, Nombres" para que sea más fácil de leer en lista
+            //  Formato: "Apellidos, Nombres" para que sea más fácil de leer en lista
             String nombreMostrar = alumno.getApellidos() + ", " + alumno.getNombres();
 
             AsistenciaDTO dto = AsistenciaDTO.builder()
@@ -125,5 +125,28 @@ public class ServicioAsistenciaImpl implements ServicioAsistencia {
                         .alumnoId(alumno.getId())
                         .estado(EstadoAsistencia.SIN_REGISTRAR) // Si no hay registro aún
                         .build());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AsistenciaDTO> listarMisAsistenciasPorSeccion(Long seccionId, String emailAlumno) {
+        Usuario alumno = usuarioRepository.findByEmail(emailAlumno)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+
+        // Obtenemos todas las asistencias registradas
+        List<Asistencia> asistencias = asistenciaRepository.findByAlumnoIdAndSeccionId(alumno.getId(), seccionId);
+
+        return asistencias.stream().map(a -> AsistenciaDTO.builder()
+                .asistenciaId(a.getId())
+                .alumnoId(alumno.getId())
+                .nombreAlumno(alumno.getNombres() + " " + alumno.getApellidos())
+                .estado(a.getEstado()) // PRESENTE, TARDE, FALTA...
+                .observacion(a.getObservacion())
+                // Es importante devolver la fecha de la sesión para la lista
+                // Nota: Asegúrate de agregar el campo 'fechaSesion' a tu AsistenciaDTO si no lo tienes,
+                // o usa un DTO extendido. Aquí lo simularé agregándolo al builder si tu DTO lo soporta,
+                // si no, agrégalo a la clase AsistenciaDTO.
+                // .fechaSesion(a.getSesion().getFecha())
+                .build()).collect(Collectors.toList());
     }
 }

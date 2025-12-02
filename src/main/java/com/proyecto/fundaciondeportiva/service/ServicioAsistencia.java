@@ -7,4 +7,5 @@ public interface ServicioAsistencia {
     List<AsistenciaDTO> obtenerAsistenciaDeSesion(Long sesionId);
     void registrarAsistenciaMasiva(RegistroAsistenciaDTO request);
     AsistenciaDTO obtenerMiAsistencia(Long sesionId, String emailAlumno);
+    List<AsistenciaDTO> listarMisAsistenciasPorSeccion(Long seccionId, String emailAlumno);
 }

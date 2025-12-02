@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,5 +41,12 @@ public class AsistenciaController {
         String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         AsistenciaDTO dto = servicioAsistencia.obtenerMiAsistencia(sesionId, email);
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/mis-asistencias/seccion/{seccionId}/historial")
+    @PreAuthorize("hasRole('ALUMNO')")
+    public ResponseEntity<List<AsistenciaDTO>> historialAsistencias(@PathVariable Long seccionId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(servicioAsistencia.listarMisAsistenciasPorSeccion(seccionId, email));
     }
 }
