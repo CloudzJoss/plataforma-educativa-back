@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator; // ✅ IMPORT NECESARIO PARA ORDENAR
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -229,7 +230,15 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
         if (!seccionRepository.existsById(seccionId)) {
             throw new RecursoNoEncontradoException("Sección no encontrada");
         }
-        return matriculaRepository.findBySeccionId(seccionId).stream()
+
+        // 1. Obtenemos la lista
+        List<Matricula> matriculas = matriculaRepository.findBySeccionId(seccionId);
+
+        // 2. ✅ ORDENAMOS POR APELLIDOS (Ignorando mayúsculas/minúsculas)
+        matriculas.sort(Comparator.comparing(m -> m.getAlumno().getApellidos(), String.CASE_INSENSITIVE_ORDER));
+
+        // 3. Convertimos a DTO
+        return matriculas.stream()
                 .map(MatriculaResponseDTO::deEntidad)
                 .collect(Collectors.toList());
     }
