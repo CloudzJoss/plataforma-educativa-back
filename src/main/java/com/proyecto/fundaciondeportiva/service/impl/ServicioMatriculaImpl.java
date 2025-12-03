@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator; // ✅ IMPORT NECESARIO PARA ORDENAR
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -231,15 +231,19 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
             throw new RecursoNoEncontradoException("Sección no encontrada");
         }
 
-        // 1. Obtenemos la lista
         List<Matricula> matriculas = matriculaRepository.findBySeccionId(seccionId);
 
-        // 2. ✅ ORDENAMOS POR APELLIDOS (Ignorando mayúsculas/minúsculas)
+        // 1. Ordenamos por apellidos
         matriculas.sort(Comparator.comparing(m -> m.getAlumno().getApellidos(), String.CASE_INSENSITIVE_ORDER));
 
-        // 3. Convertimos a DTO
+        // 2. Convertimos a DTO y cambiamos el formato del nombre a "Apellido, Nombre"
         return matriculas.stream()
-                .map(MatriculaResponseDTO::deEntidad)
+                .map(m -> {
+                    MatriculaResponseDTO dto = MatriculaResponseDTO.deEntidad(m);
+                    // ✅ AQUI ESTA EL CAMBIO: Formato "Apellidos, Nombres"
+                    dto.setNombreAlumno(m.getAlumno().getApellidos() + ", " + m.getAlumno().getNombres());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -249,8 +253,20 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
         if (!seccionRepository.existsById(seccionId)) {
             throw new RecursoNoEncontradoException("Sección no encontrada");
         }
-        return matriculaRepository.findBySeccionIdAndEstado(seccionId, EstadoMatricula.ACTIVA).stream()
-                .map(MatriculaResponseDTO::deEntidad)
+
+        List<Matricula> matriculas = matriculaRepository.findBySeccionIdAndEstado(seccionId, EstadoMatricula.ACTIVA);
+
+        // 1. Ordenamos por apellidos
+        matriculas.sort(Comparator.comparing(m -> m.getAlumno().getApellidos(), String.CASE_INSENSITIVE_ORDER));
+
+        // 2. Convertimos a DTO y cambiamos el formato del nombre a "Apellido, Nombre"
+        return matriculas.stream()
+                .map(m -> {
+                    MatriculaResponseDTO dto = MatriculaResponseDTO.deEntidad(m);
+                    // ✅ AQUI ESTA EL CAMBIO: Formato "Apellidos, Nombres"
+                    dto.setNombreAlumno(m.getAlumno().getApellidos() + ", " + m.getAlumno().getNombres());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -328,10 +344,6 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
 
     // --- MÉTODOS PRIVADOS AUXILIARES ---
 
-    /**
-     * Valida si el alumno tiene cruces de horarios con la nueva sección.
-     * Se optimizó para usar queries directas en lugar de bucles en memoria.
-     */
     private void validarCruceHorariosAlumno(Long alumnoId, Seccion seccion) {
         List<Horario> horariosNuevos = seccion.getHorarios();
 
