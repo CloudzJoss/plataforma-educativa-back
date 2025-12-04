@@ -4,6 +4,8 @@ import com.proyecto.fundaciondeportiva.dto.request.SeccionRequestDTO;
 import com.proyecto.fundaciondeportiva.dto.response.SeccionResponseDTO;
 import com.proyecto.fundaciondeportiva.model.enums.NivelAcademico;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 
 public interface ServicioSeccion {
@@ -23,8 +25,9 @@ public interface ServicioSeccion {
     List<SeccionResponseDTO> listarSeccionesPorProfesor(Long profesorId);
     List<SeccionResponseDTO> listarSeccionesPorDniProfesor(String dni);
 
-    // ELIMINADO: List<SeccionResponseDTO> listarSeccionesPorTurno(Turno turno);
-
     List<SeccionResponseDTO> listarSeccionesConCupo();
     List<SeccionResponseDTO> listarSeccionesPorNivel(NivelAcademico nivel);
+
+    // NUEVO MÉTODO
+    List<SeccionResponseDTO> listarSeccionesPorHorario(DayOfWeek dia, LocalTime hora);
 }

@@ -18,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -355,4 +357,21 @@ public class SeccionController {
             throw e;
         }
     }
+
+    //  NUEVO ENDPOINT: Filtrar secciones por horario (para el Admin)
+    @GetMapping("/por-horario")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<List<SeccionResponseDTO>> listarSeccionesPorHorario(
+            @RequestParam DayOfWeek dia,
+            @RequestParam LocalTime hora) {
+        try {
+            logger.info("Admin consulta secciones por horario: {} {}", dia, hora);
+            List<SeccionResponseDTO> secciones = servicioSeccion.listarSeccionesPorHorario(dia, hora);
+            return ResponseEntity.ok(secciones);
+        } catch (Exception e) {
+            logger.error("Error filtrando por horario", e);
+            throw e;
+        }
+    }
+
 }

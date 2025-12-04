@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class SesionDTO {
     private Long id;
     private String tema;
-    private String resultado; // ✅ CAMBIADO
+    private String resultado; //  CAMBIADO
     private LocalDate fecha;
     private LocalTime horaInicio;
     private LocalTime horaFin;

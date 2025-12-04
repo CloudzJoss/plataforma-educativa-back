@@ -20,7 +20,6 @@ public class AsistenciaController {
     private ServicioAsistencia servicioAsistencia;
 
     // Obtener la "hoja de asistencia" de una sesión
-    // Devuelve los alumnos y su estado (guardado o SIN_REGISTRAR)
     @GetMapping("/sesion/{sesionId}")
     @PreAuthorize("hasAnyRole('PROFESOR', 'ADMINISTRADOR')")
     public ResponseEntity<List<AsistenciaDTO>> obtenerAsistencia(@PathVariable Long sesionId) {
@@ -28,13 +27,14 @@ public class AsistenciaController {
         return ResponseEntity.ok(asistencia);
     }
 
-    // Guardar o actualizar la asistencia de toda la clase
+    //  MODIFICADO: Ahora el ADMIN también puede guardar/editar asistencia
     @PostMapping("/guardar")
-    @PreAuthorize("hasRole('PROFESOR')")
+    @PreAuthorize("hasAnyRole('PROFESOR', 'ADMINISTRADOR')")
     public ResponseEntity<Void> guardarAsistencia(@Valid @RequestBody RegistroAsistenciaDTO request) {
         servicioAsistencia.registrarAsistenciaMasiva(request);
         return ResponseEntity.ok().build();
     }
+
     @GetMapping("/mi-asistencia/sesion/{sesionId}")
     @PreAuthorize("hasRole('ALUMNO')")
     public ResponseEntity<AsistenciaDTO> obtenerMiAsistencia(@PathVariable Long sesionId) {

@@ -15,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -340,5 +342,15 @@ public class ServicioSeccionImpl implements ServicioSeccion {
             boolean hayCruce = horarioRepository.existeCruceProfesor(profesorId, h.getDiaSemana(), h.getHoraInicio(), h.getHoraFin(), idIgnorar);
             if (hayCruce) throw new ValidacionException("El profesor ya tiene clase el " + h.getDiaSemana() + " en ese horario");
         }
+    }
+
+    // NUEVO MÉTODO IMPLEMENTADO
+    @Override
+    @Transactional(readOnly = true)
+    public List<SeccionResponseDTO> listarSeccionesPorHorario(DayOfWeek dia, LocalTime hora) {
+        logger.info("Buscando secciones activas para el día {} a las {}", dia, hora);
+        return seccionRepository.findByHorarioActivo(dia, hora).stream()
+                .map(SeccionResponseDTO::deEntidad)
+                .collect(Collectors.toList());
     }
 }
