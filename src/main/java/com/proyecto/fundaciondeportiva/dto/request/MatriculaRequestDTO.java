@@ -6,10 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO para crear una matrícula.
- * Solo requiere el ID de la sección, ya que el alumno se identifica por JWT.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,5 +15,8 @@ public class MatriculaRequestDTO {
     @NotNull(message = "El ID de la sección es obligatorio")
     private Long seccionId;
 
-    private String observaciones; // Opcional
+    //NUEVO: Opcional, solo se usa cuando el ADMIN registra la matrícula
+    private Long alumnoId;
+
+    private String observaciones;
 }

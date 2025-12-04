@@ -326,4 +326,26 @@ public class MatriculaController {
             throw e;
         }
     }
+
+    @PostMapping("/admin/registrar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<MatriculaResponseDTO> registrarMatriculaPorAdmin(@Valid @RequestBody MatriculaRequestDTO request) {
+        try {
+            logger.info("Admin registra matrícula para alumno ID: {}", request.getAlumnoId());
+
+            if (request.getAlumnoId() == null) {
+                throw new RuntimeException("El ID del alumno es obligatorio para el registro administrativo.");
+            }
+
+            // Reutilizamos la lógica del servicio existente
+            // El servicio ya valida cupos, cruces de horario, etc.
+            MatriculaResponseDTO matriculaCreada = servicioMatricula.matricularseEnSeccion(request.getAlumnoId(), request);
+
+            return new ResponseEntity<>(matriculaCreada, HttpStatus.CREATED);
+
+        } catch (Exception e) {
+            logger.error("Error en registro administrativo", e);
+            throw e;
+        }
+    }
 }
