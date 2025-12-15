@@ -69,7 +69,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         configuration.setAllowedOrigins(Arrays.asList(
-                // Tu Frontend en la Nube (SIN LA BARRA FINAL /)
+                // Frontend en la Nube 
                 "https://plataforma-edu-front-exemfwbmfbczc9fx.chilecentral-01.azurewebsites.net",
                 
                 // Dejamos localhost:3000 por si necesitas probar algo localmente en el futuro
