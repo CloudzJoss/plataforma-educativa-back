@@ -57,7 +57,7 @@ public class AuthController {
 
         response.addCookie(jwtCookie);
 
-        // ✅ CORRECCIÓN AQUÍ: Concatenamos nombres y apellidos
+        //Concatenamos nombres y apellidos
         String nombreCompleto = usuario.getNombres() + " " + usuario.getApellidos();
 
         LoginOutputDTO responseBody = LoginOutputDTO.builder()

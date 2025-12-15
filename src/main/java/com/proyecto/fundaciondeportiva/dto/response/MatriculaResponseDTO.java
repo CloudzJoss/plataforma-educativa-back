@@ -79,7 +79,7 @@ public class MatriculaResponseDTO {
                 .observaciones(matricula.getObservaciones())
                 // Alumno
                 .alumnoId(matricula.getAlumno().getId())
-                .nombreAlumno(nombreCompletoAlumno) // ✅ Usamos la variable concatenada
+                .nombreAlumno(nombreCompletoAlumno)
                 .dniAlumno(matricula.getAlumno().getPerfilAlumno() != null ?
                         matricula.getAlumno().getPerfilAlumno().getDni() : null)
                 .codigoEstudiante(matricula.getAlumno().getPerfilAlumno() != null ?
@@ -103,7 +103,7 @@ public class MatriculaResponseDTO {
                 .nivelCurso(matricula.getSeccion().getCurso().getNivelDestino())
                 // Profesor
                 .profesorId(matricula.getSeccion().getProfesor().getId())
-                .nombreProfesor(nombreCompletoProfesor) // ✅ Usamos la variable concatenada
+                .nombreProfesor(nombreCompletoProfesor)
                 .dniProfesor(matricula.getSeccion().getProfesor().getPerfilProfesor() != null ?
                         matricula.getSeccion().getProfesor().getPerfilProfesor().getDni() : null)
                 .build();

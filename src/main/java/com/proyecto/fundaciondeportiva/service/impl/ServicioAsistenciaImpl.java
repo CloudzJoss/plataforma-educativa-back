@@ -40,7 +40,7 @@ public class ServicioAsistenciaImpl implements ServicioAsistencia {
         // 1. Obtener los alumnos matriculados
         List<Matricula> matriculas = matriculaRepository.findBySeccionIdAndEstado(sesion.getSeccion().getId(), EstadoMatricula.ACTIVA);
 
-        //  NUEVO: Ordenar la lista de matrículas por Apellido alfabéticamente
+        // Ordenar la lista de matrículas por Apellido alfabéticamente
         matriculas.sort(Comparator.comparing(m -> m.getAlumno().getApellidos(), String.CASE_INSENSITIVE_ORDER));
 
         // 2. Obtener registros ya guardados

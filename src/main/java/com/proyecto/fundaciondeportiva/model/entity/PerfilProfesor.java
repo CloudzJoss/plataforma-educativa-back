@@ -32,6 +32,6 @@ public class PerfilProfesor {
     private String gradoAcademico;
 
     @OneToOne(mappedBy = "perfilProfesor")
-    @JsonIgnore // 👈 AÑADIDO
+    @JsonIgnore
     private Usuario usuario;
 }

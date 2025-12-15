@@ -82,7 +82,6 @@ public class Seccion {
     @EqualsAndHashCode.Exclude
     private Usuario profesor;
 
-    // ✅ NUEVA RELACIÓN: HORARIOS
     @OneToMany(mappedBy = "seccion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     @Builder.Default

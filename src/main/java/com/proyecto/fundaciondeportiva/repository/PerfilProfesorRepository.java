@@ -15,13 +15,13 @@ public interface PerfilProfesorRepository extends JpaRepository<PerfilProfesor, 
 
     /**
      * Busca un perfil de profesor por su DNI.
-     * 🚨 NOTA: 'findByDni' debe estar en inglés.
+     *  'findByDni' debe estar en inglés.
      */
     Optional<PerfilProfesor> findByDni(String dni);
 
     /**
      * Verifica de forma eficiente si un DNI ya existe.
-     * 🚨 NOTA: 'existsByDni' debe estar en inglés.
+     * 'existsByDni' debe estar en inglés.
      */
     boolean existsByDni(String dni);
 }

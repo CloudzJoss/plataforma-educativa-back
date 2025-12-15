@@ -29,7 +29,6 @@ public class CursoController {
     // --- Endpoints de ADMIN ---
 
     @PostMapping
-    // 🚨 CORRECCIÓN: Tu Enum Rol.java usa 'ADMINISTRADOR' (y tu UsuarioService crea 'ROLE_ADMINISTRADOR')
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CursoResponseDTO> crearCurso(@Valid @RequestBody CursoRequestDTO request) {
         String emailAdmin = SecurityContextHolder.getContext().getAuthentication().getName();

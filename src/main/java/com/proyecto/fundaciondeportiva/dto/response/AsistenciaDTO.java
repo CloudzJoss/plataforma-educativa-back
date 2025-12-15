@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AsistenciaDTO {
-    private Long asistenciaId; // Puede ser null si aún no se ha guardado en BD
+    private Long asistenciaId;
     private Long alumnoId;
     private String nombreAlumno;
     private String codigoEstudiante;

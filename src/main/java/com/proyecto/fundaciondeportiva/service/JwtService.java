@@ -23,7 +23,7 @@ public class JwtService {
 
     // TIEMPO DE EXPIRACIÓN: 15 Minutos (en milisegundos)
     // 1000 ms * 60 s * 15 m
-    public static final long EXPIRATION_TIME = 1000 * 60 * 1;
+    public static final long EXPIRATION_TIME = 1000 * 60 * 15;
 
     public String generateToken(UserDetails userDetails) {
         return createToken(new HashMap<>(), userDetails.getUsername());

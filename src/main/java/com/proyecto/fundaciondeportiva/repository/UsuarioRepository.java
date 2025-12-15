@@ -14,6 +14,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     boolean existsByEmail(String email);
 
-    // NUEVO: Búsqueda flexible por apellidos (ignorando mayúsculas/minúsculas)
+    // Búsqueda flexible por apellidos (ignorando mayúsculas/minúsculas)
     List<Usuario> findByApellidosContainingIgnoreCase(String apellidos);
 }

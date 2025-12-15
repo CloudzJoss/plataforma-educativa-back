@@ -42,9 +42,6 @@ public class Curso {
     @Column(name = "nivel_destino", nullable = false)
     private NivelAcademico nivelDestino;
 
-    // 🚨 CAMPO ELIMINADO (basado en tu solicitud)
-    // @Column(name = "grado_destino", length = 20, nullable = false)
-    // private String gradoDestino;
 
     @CreationTimestamp
     @Column(name = "fecha_creacion", updatable = false, nullable = false)

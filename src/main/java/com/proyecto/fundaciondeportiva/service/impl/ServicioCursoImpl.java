@@ -79,7 +79,7 @@ public class ServicioCursoImpl implements ServicioCurso {
                         return new RecursoNoEncontradoException("Usuario administrador no encontrado: " + emailAdmin);
                     });
 
-            // ✅ CORREGIDO: Uso de getNombres() y getApellidos() en el log
+            //  Uso de getNombres() y getApellidos() en el log
             logger.info("Usuario administrador encontrado: {} {} (ID: {})",
                     admin.getNombres(), admin.getApellidos(), admin.getId());
 

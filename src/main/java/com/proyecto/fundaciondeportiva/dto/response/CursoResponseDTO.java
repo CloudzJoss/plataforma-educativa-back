@@ -32,7 +32,7 @@ public class CursoResponseDTO {
             return null;
         }
 
-        // ✅ CORREGIDO: Concatenación de nombres y apellidos
+        // Concatenación de nombres y apellidos
         String nombreCreador = "Sistema";
         if (curso.getCreadoPor() != null) {
             nombreCreador = curso.getCreadoPor().getNombres() + " " + curso.getCreadoPor().getApellidos();

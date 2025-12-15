@@ -83,7 +83,7 @@ public class SeccionResponseDTO {
                 .nivelCurso(seccion.getCurso().getNivelDestino())
                 // Profesor
                 .profesorId(seccion.getProfesor().getId())
-                .nombreProfesor(nombreCompletoProfesor) // ✅ Usamos la variable concatenada
+                .nombreProfesor(nombreCompletoProfesor)
                 .dniProfesor(seccion.getProfesor().getPerfilProfesor() != null ?
                         seccion.getProfesor().getPerfilProfesor().getDni() : "N/A")
                 // Estadísticas

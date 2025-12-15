@@ -15,23 +15,23 @@ public interface PerfilAlumnoRepository extends JpaRepository<PerfilAlumno, Long
 
     // --- Métodos para OBTENER el perfil ---
     /**
-     * 🚨 NOTA: 'findByDni' debe estar en inglés.
+     * 'findByDni' debe estar en inglés.
      */
     Optional<PerfilAlumno> findByDni(String dni);
 
     /**
-     * 🚨 NOTA: 'findByCodigoEstudiante' debe estar en inglés.
+     *  'findByCodigoEstudiante' debe estar en inglés.
      */
     Optional<PerfilAlumno> findByCodigoEstudiante(String codigoEstudiante);
 
     // --- Métodos para VALIDAR si ya existe (más eficientes) ---
     /**
-     * 🚨 NOTA: 'existsByDni' debe estar en inglés.
+     *  'existsByDni' debe estar en inglés.
      */
     boolean existsByDni(String dni);
 
     /**
-     * 🚨 NOTA: 'existsByCodigoEstudiante' debe estar en inglés.
+     * 'existsByCodigoEstudiante' debe estar en inglés.
      */
     boolean existsByCodigoEstudiante(String codigoEstudiante);
 }

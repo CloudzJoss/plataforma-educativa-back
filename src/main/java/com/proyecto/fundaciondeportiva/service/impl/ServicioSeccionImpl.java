@@ -41,7 +41,7 @@ public class ServicioSeccionImpl implements ServicioSeccion {
     @Autowired
     private HorarioRepository horarioRepository;
 
-    // ✅ INYECCIÓN NECESARIA PARA LAS SESIONES
+    //  INYECCIÓN NECESARIA PARA LAS SESIONES
     @Autowired
     private SesionRepository sesionRepository;
 
@@ -124,7 +124,7 @@ public class ServicioSeccionImpl implements ServicioSeccion {
 
         Seccion seccionGuardada = seccionRepository.save(nuevaSeccion);
 
-        // ✅ GENERACIÓN AUTOMÁTICA DE SESIONES
+        //  GENERACIÓN AUTOMÁTICA DE SESIONES
         generarSesionesAutomaticas(seccionGuardada);
 
         logger.info("Sección creada exitosamente. Sección ID: {}, Código: {}", seccionGuardada.getId(), codigoGenerado);
@@ -192,7 +192,7 @@ public class ServicioSeccionImpl implements ServicioSeccion {
 
         Seccion seccionActualizada = seccionRepository.save(seccion);
 
-        // ✅ REGENERACIÓN DE SESIONES (Si se edita la sección, recalculamos el calendario)
+        //  REGENERACIÓN DE SESIONES (Si se edita la sección, recalculamos el calendario)
         // 1. Borrar sesiones futuras/todas (depende de tu regla de negocio, aquí borramos todas para regenerar limpio)
         sesionRepository.deleteBySeccionId(id);
 
@@ -268,7 +268,7 @@ public class ServicioSeccionImpl implements ServicioSeccion {
     // --- MÉTODOS PRIVADOS ---
 
     /**
-     * ✅ LÓGICA PRINCIPAL: Genera las sesiones en base a fechas y horarios
+     *  LÓGICA PRINCIPAL: Genera las sesiones en base a fechas y horarios
      */
     private void generarSesionesAutomaticas(Seccion seccion) {
         LocalDate inicio = seccion.getFechaInicio();
@@ -304,7 +304,7 @@ public class ServicioSeccionImpl implements ServicioSeccion {
 
         if (!sesionesAGenerar.isEmpty()) {
             sesionRepository.saveAll(sesionesAGenerar);
-            logger.info("✅ Se generaron {} sesiones automáticas para la sección {}", sesionesAGenerar.size(), seccion.getCodigo());
+            logger.info(" Se generaron {} sesiones automáticas para la sección {}", sesionesAGenerar.size(), seccion.getCodigo());
         }
     }
 

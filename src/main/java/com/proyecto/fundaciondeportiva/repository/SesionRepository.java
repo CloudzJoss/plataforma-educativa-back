@@ -10,6 +10,6 @@ import java.util.List;
 public interface SesionRepository extends JpaRepository<Sesion, Long> {
     List<Sesion> findBySeccionIdOrderByFechaAsc(Long seccionId);
 
-    // Para borrar sesiones viejas al actualizar una sección
+    // borrar sesiones viejas al actualizar una sección
     void deleteBySeccionId(Long seccionId);
 }

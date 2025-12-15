@@ -34,7 +34,7 @@ public interface SeccionRepository extends JpaRepository<Seccion, Long> {
     @Query("SELECT s FROM Seccion s WHERE s.activa = true AND SIZE(s.matriculas) < s.capacidad")
     List<Seccion> findSeccionesConCupoDisponible();
 
-    //NUEVO: Buscar secciones que se estén dictando en un día y hora específicos
+    //Buscar secciones que se estén dictando en un día y hora específicos
     @Query("SELECT DISTINCT s FROM Seccion s JOIN s.horarios h " +
             "WHERE s.activa = true " +
             "AND h.diaSemana = :dia " +

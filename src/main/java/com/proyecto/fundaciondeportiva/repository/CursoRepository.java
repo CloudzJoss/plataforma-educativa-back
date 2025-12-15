@@ -10,7 +10,7 @@ import java.util.Optional;
 
 /**
  * Repositorio para la entidad Curso.
- * 🚨 ACTUALIZADO: Se eliminó el método de búsqueda por Nivel y Grado.
+ * ACTUALIZADO: Se eliminó el método de búsqueda por Nivel y Grado.
  */
 @Repository
 public interface CursoRepository extends JpaRepository<Curso, Long> {
@@ -22,7 +22,7 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
 
     /**
      * Busca todos los cursos destinados a un nivel específico.
-     * 🚨 ACTUALIZADO: Ahora busca solo por Nivel.
+     * ACTUALIZADO: Ahora busca solo por Nivel.
      */
     List<Curso> findByNivelDestino(NivelAcademico nivel);
 

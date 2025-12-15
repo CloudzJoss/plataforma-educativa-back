@@ -84,7 +84,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 throw new ValidacionException("Ya estás matriculado en esta sección");
             }
 
-            // 5. 🔒 VALIDACIÓN: NO REPETIR CURSO
+            // 5. VALIDACIÓN: NO REPETIR CURSO
             Long cursoId = seccion.getCurso().getId();
             boolean yaTieneCurso = matriculaRepository.existeMatriculaActivaEnCurso(alumnoId, cursoId);
 
@@ -128,7 +128,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
                 }
             }
 
-            // 8. 🔒 VALIDAR CRUCE DE HORARIOS (ALUMNO) - OPTIMIZADO
+            // 8.  VALIDAR CRUCE DE HORARIOS (ALUMNO) - OPTIMIZADO
             validarCruceHorariosAlumno(alumnoId, seccion);
 
             // 9. Crear la matrícula
@@ -240,7 +240,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
         return matriculas.stream()
                 .map(m -> {
                     MatriculaResponseDTO dto = MatriculaResponseDTO.deEntidad(m);
-                    // ✅ AQUI ESTA EL CAMBIO: Formato "Apellidos, Nombres"
+                    // AQUI ESTA EL CAMBIO: Formato "Apellidos, Nombres"
                     dto.setNombreAlumno(m.getAlumno().getApellidos() + ", " + m.getAlumno().getNombres());
                     return dto;
                 })
@@ -263,7 +263,7 @@ public class ServicioMatriculaImpl implements ServicioMatricula {
         return matriculas.stream()
                 .map(m -> {
                     MatriculaResponseDTO dto = MatriculaResponseDTO.deEntidad(m);
-                    // ✅ AQUI ESTA EL CAMBIO: Formato "Apellidos, Nombres"
+                    //  AQUI ESTA EL CAMBIO: Formato "Apellidos, Nombres"
                     dto.setNombreAlumno(m.getAlumno().getApellidos() + ", " + m.getAlumno().getNombres());
                     return dto;
                 })

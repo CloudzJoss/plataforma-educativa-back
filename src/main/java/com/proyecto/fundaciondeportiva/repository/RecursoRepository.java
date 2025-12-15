@@ -15,7 +15,7 @@ public interface RecursoRepository extends JpaRepository<Recurso, Long> {
     /**
      * Busca todos los recursos de una sesión de clase,
      * ordenados por el momento en que se usan.
-     * 🚨 NOTA: 'findBySesionIdOrderByMomentoAsc' debe estar en inglés.
+     * 'findBySesionIdOrderByMomentoAsc' debe estar en inglés.
      */
     List<Recurso> findBySesionIdOrderByMomentoAsc(Long sesionId);
 }
